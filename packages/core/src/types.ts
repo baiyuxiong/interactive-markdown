@@ -1,5 +1,4 @@
 export type ImdOption = { value: string; label: string };
-export type ImdActionItem = { actionId: string; label: string };
 
 export type ImdBlock =
   | { type: "markdown"; text: string }
@@ -30,10 +29,12 @@ export type ImdBlock =
       hint?: string;
     }
   | {
-      type: "actions";
-      items: ImdActionItem[];
+      type: "action";
+      id: string;
       label?: string;
       hint?: string;
+      data?: unknown;
+      dataError?: string;
     };
 
 export type ImdDocument = {
@@ -62,11 +63,10 @@ export type ValidationResult = {
 };
 
 export type ImdPendingBlock = {
-  type: "choice" | "input" | "switch" | "actions";
+  type: "choice" | "input" | "switch" | "action";
   id?: string;
   mode?: "single" | "multiple";
   options?: ImdOption[];
-  items?: ImdActionItem[];
   label?: string;
   placeholder?: string;
   required?: boolean;
