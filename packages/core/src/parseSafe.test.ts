@@ -60,12 +60,31 @@ describe("parseSafe", () => {
     });
   });
 
-  it("returns pending=null for unknown directive names (content excluded from document)", () => {
+  it("unknown unclosed directive: pending=null and parse folds excludedRaw", () => {
     const source = "Hi\n\n:::foobar{id=x}\nbody";
     const result = parseSafe(source);
     expect(result.pending).toBeNull();
     expect(result.document.blocks).toEqual([
       { type: "markdown", text: "Hi\n\n" },
+    ]);
+    // parse folds excludedRaw as a trailing markdown block (split from leading Hi\n\n)
+    expect(parse(source).blocks).toEqual([
+      { type: "markdown", text: "Hi\n\n" },
+      { type: "markdown", text: ":::foobar{id=x}\nbody" },
+    ]);
+  });
+
+  it("half-open attrs fence: pending=null and parse folds incomplete open", () => {
+    const source = "Hi\n\n:::choice{id=login";
+    const result = parseSafe(source);
+    expect(result.pending).toBeNull();
+    expect(result.document.blocks).toEqual([
+      { type: "markdown", text: "Hi\n\n" },
+    ]);
+    // intentional split: leading markdown + trailing fold of incomplete open
+    expect(parse(source).blocks).toEqual([
+      { type: "markdown", text: "Hi\n\n" },
+      { type: "markdown", text: ":::choice{id=login" },
     ]);
   });
 
