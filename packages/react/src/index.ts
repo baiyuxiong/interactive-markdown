@@ -1,5 +1,5 @@
 import {
-  DefaultActions,
+  DefaultAction,
   DefaultChoice,
   DefaultInput,
   DefaultSwitch,
@@ -15,7 +15,7 @@ import {
 
 export { InteractiveMarkdown };
 export {
-  DefaultActions,
+  DefaultAction,
   DefaultChoice,
   DefaultInput,
   DefaultSwitch,

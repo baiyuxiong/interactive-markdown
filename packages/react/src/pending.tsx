@@ -33,10 +33,10 @@ export function pendingToBlock(pending: ImdPendingBlock): ImdBlock {
         ...(pending.hint ? { hint: pending.hint } : {}),
         ...(pending.default ? { default: pending.default } : {}),
       };
-    case "actions":
+    case "action":
       return {
-        type: "actions",
-        items: pending.items ?? [],
+        type: "action",
+        id: pending.id ?? "",
         ...(pending.label ? { label: pending.label } : {}),
         ...(pending.hint ? { hint: pending.hint } : {}),
       };
@@ -48,8 +48,7 @@ export function DefaultPendingPlaceholder({
 }: {
   pending: ImdPendingBlock;
 }) {
-  const bars =
-    pending.type === "choice" || pending.type === "actions" ? 2 : 1;
+  const bars = pending.type === "choice" ? 2 : 1;
   return (
     <div
       className="imd-pending imd-pending-placeholder"
@@ -69,11 +68,11 @@ export function renderProgressivePending(args: {
   Choice: NonNullable<ImdComponents["Choice"]>;
   Input: NonNullable<ImdComponents["Input"]>;
   Switch: NonNullable<ImdComponents["Switch"]>;
-  Actions: NonNullable<ImdComponents["Actions"]>;
+  Action: NonNullable<ImdComponents["Action"]>;
   meta?: Record<string, unknown>;
 }): ReactNode {
   const block = pendingToBlock(args.pending);
-  const { Choice, Input, Switch, Actions } = args;
+  const { Choice, Input, Switch, Action } = args;
   const common = {
     incomplete: true as const,
     disabled: true,
@@ -96,8 +95,8 @@ export function renderProgressivePending(args: {
   if (block.type === "switch") {
     return <Switch key="pending-switch" block={block} {...common} />;
   }
-  if (block.type === "actions") {
-    return <Actions key="pending-actions" block={block} {...common} />;
+  if (block.type === "action") {
+    return <Action key="pending-action" block={block} {...common} />;
   }
   return null;
 }

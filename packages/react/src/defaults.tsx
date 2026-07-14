@@ -9,7 +9,7 @@ import type { BlockComponentProps } from "./types.js";
 type ChoiceBlock = Extract<ImdBlock, { type: "choice" }>;
 type InputBlock = Extract<ImdBlock, { type: "input" }>;
 type SwitchBlock = Extract<ImdBlock, { type: "switch" }>;
-type ActionsBlock = Extract<ImdBlock, { type: "actions" }>;
+type ActionBlock = Extract<ImdBlock, { type: "action" }>;
 
 export function DefaultChoice({
   block,
@@ -189,29 +189,25 @@ export function DefaultSwitch({
   );
 }
 
-export function DefaultActions({
+export function DefaultAction({
   block,
   disabled,
   onSubmit,
   incomplete,
-}: BlockComponentProps<ActionsBlock>) {
+}: BlockComponentProps<ActionBlock>) {
   return (
     <div
-      className="imd-actions"
-      data-imd="actions"
+      className="imd-action"
+      data-imd="action"
       data-imd-pending={incomplete ? "" : undefined}
     >
-      {block.label ? <div className="imd-label">{block.label}</div> : null}
-      {block.items.map((item) => (
-        <button
-          key={item.actionId}
-          type="button"
-          disabled={disabled}
-          onClick={() => onSubmit([item.actionId])}
-        >
-          {item.label}
-        </button>
-      ))}
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => onSubmit([block.id])}
+      >
+        {block.label ?? block.id}
+      </button>
       {block.hint ? <p className="imd-hint">{block.hint}</p> : null}
     </div>
   );
@@ -229,7 +225,7 @@ export function emitForBlock(
       return buildInteractionResult("input", block, values, meta);
     case "switch":
       return buildInteractionResult("switch", block, values, meta);
-    case "actions":
+    case "action":
       return buildInteractionResult("action", block, values, meta);
     default:
       return null;

@@ -40,8 +40,8 @@ export type ImdComponents = {
   Switch?: ComponentType<
     BlockComponentProps<Extract<ImdBlock, { type: "switch" }>>
   >;
-  Actions?: ComponentType<
-    BlockComponentProps<Extract<ImdBlock, { type: "actions" }>>
+  Action?: ComponentType<
+    BlockComponentProps<Extract<ImdBlock, { type: "action" }>>
   >;
   Markdown?: ComponentType<{ children: string }>;
 };

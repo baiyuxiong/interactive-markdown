@@ -8,7 +8,7 @@ import {
   type ImdBlock,
 } from "@interactive-markdown/core";
 import {
-  DefaultActions,
+  DefaultAction,
   DefaultChoice,
   DefaultInput,
   DefaultSwitch,
@@ -29,7 +29,7 @@ export type {
 } from "./types.js";
 
 export {
-  DefaultActions,
+  DefaultAction,
   DefaultChoice,
   DefaultInput,
   DefaultSwitch,
@@ -66,7 +66,7 @@ export function InteractiveMarkdown({
   const Choice = components?.Choice ?? DefaultChoice;
   const Input = components?.Input ?? DefaultInput;
   const Switch = components?.Switch ?? DefaultSwitch;
-  const Actions = components?.Actions ?? DefaultActions;
+  const Action = components?.Action ?? DefaultAction;
   const Md = components?.Markdown ?? DefaultMarkdown;
 
   const handle = (block: ImdBlock, values: string[]) => {
@@ -96,19 +96,19 @@ export function InteractiveMarkdown({
     } else if (incomplete === "placeholder") {
       pendingNode = <DefaultPendingPlaceholder pending={pending} />;
     } else if (incomplete === "progressive") {
-      const hasRows =
+      const canProgress =
         pending.type === "choice"
           ? (pending.options?.length ?? 0) > 0
-          : pending.type === "actions"
-            ? (pending.items?.length ?? 0) > 0
+          : pending.type === "action"
+            ? Boolean(pending.id)
             : true;
-      pendingNode = hasRows
+      pendingNode = canProgress
         ? renderProgressivePending({
             pending,
             Choice,
             Input,
             Switch,
-            Actions,
+            Action,
             meta,
           })
         : null;
@@ -132,8 +132,7 @@ export function InteractiveMarkdown({
           );
         }
 
-        const answerKey =
-          block.type === "actions" ? undefined : "id" in block ? block.id : undefined;
+        const answerKey = "id" in block ? block.id : undefined;
         const values = answerKey ? answers?.[answerKey]?.values : undefined;
 
         if (block.type === "choice") {
@@ -173,15 +172,19 @@ export function InteractiveMarkdown({
             />
           );
         }
-        return (
-          <Actions
-            key={`actions-${index}`}
-            block={block}
-            disabled={disabled}
-            meta={meta}
-            onSubmit={(v) => handle(block, v)}
-          />
-        );
+        if (block.type === "action") {
+          return (
+            <Action
+              key={`action-${block.id}-${index}`}
+              block={block}
+              disabled={disabled}
+              values={values}
+              meta={meta}
+              onSubmit={(v) => handle(block, v)}
+            />
+          );
+        }
+        return null;
       })}
       {pendingNode}
     </div>

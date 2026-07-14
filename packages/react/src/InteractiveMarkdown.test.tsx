@@ -17,9 +17,7 @@ const sample = [
   ":::switch{id=notify label=Notify default=off}",
   ":::",
   "",
-  ":::actions",
-  "- submit | Submit",
-  "- skip | Skip",
+  ':::action{id=submit label="Submit"}',
   ":::",
 ].join("\n");
 
@@ -141,8 +139,8 @@ describe("InteractiveMarkdown", () => {
       ":::switch{id=notify label=Notify default=off}",
       ":::",
       "",
-      ":::actions",
-      "- skip | Skip",
+      ':::action{id=skip label="Skip"}',
+      '{"reason":"later"}',
       ":::",
     ].join("\n");
     render(
@@ -158,7 +156,30 @@ describe("InteractiveMarkdown", () => {
       kind: "action",
       blockId: "skip",
       values: ["skip"],
+      block: {
+        type: "action",
+        id: "skip",
+        label: "Skip",
+        data: { reason: "later" },
+      },
     });
+  });
+
+  it("emits dataError on action click when JSON is invalid", async () => {
+    const user = userEvent.setup();
+    const onAction = vi.fn();
+    render(
+      <InteractiveMarkdown
+        source={":::action{id=broken label=Broken}\n{bad\n:::"}
+        interactive={{ onAction }}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Broken" }));
+    const result = onAction.mock.calls[0]?.[0];
+    expect(result.kind).toBe("action");
+    expect(result.block.type).toBe("action");
+    expect(result.block.dataError).toEqual(expect.any(String));
+    expect(result.block.data).toBeUndefined();
   });
 
   it("respects disabled and answers", () => {
@@ -291,6 +312,25 @@ describe("InteractiveMarkdown", () => {
     expect(screen.getByRole("textbox")).toHaveValue("Hello");
   });
 
+  it("progressive action shows once id is stable without waiting for JSON", () => {
+    const { rerender } = render(
+      <InteractiveMarkdown
+        source={':::action{id=go label="Go"}\n'}
+        streaming
+        incomplete="progressive"
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Go" })).toBeDisabled();
+    rerender(
+      <InteractiveMarkdown
+        source={':::action{id=go label="Go"}\n{"a":1}\n'}
+        streaming
+        incomplete="progressive"
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Go" })).toBeDisabled();
+  });
+
   it("placeholder mode renders pending skeleton, not option labels", () => {
     const incomplete =
       "Hello\n\n:::choice{id=more mode=single}\n- a | SecretLabel";
@@ -332,8 +372,7 @@ describe("InteractiveMarkdown", () => {
       ':::switch{id=s label="Notify" default=off hint="switch hint"}',
       ":::",
       "",
-      ':::actions{label="Next steps" hint="actions hint"}',
-      "- go | Go",
+      ':::action{id=go label="Go" hint="action hint"}',
       ":::",
     ].join("\n");
     const { container } = render(<InteractiveMarkdown source={src} />);
@@ -372,11 +411,11 @@ describe("InteractiveMarkdown", () => {
     ]);
     assertOrder([row, sw.querySelector(".imd-hint")]);
 
-    const actions = container.querySelector('[data-imd="actions"]')!;
+    const action = container.querySelector('[data-imd="action"]')!;
+    expect(action.querySelector(".imd-label")).toBeNull();
     assertOrder([
-      actions.querySelector(".imd-label"),
-      actions.querySelector("button"),
-      actions.querySelector(".imd-hint"),
+      action.querySelector("button"),
+      action.querySelector(".imd-hint"),
     ]);
   });
 });
