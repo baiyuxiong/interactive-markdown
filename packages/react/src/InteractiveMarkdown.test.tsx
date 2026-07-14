@@ -312,6 +312,26 @@ describe("InteractiveMarkdown", () => {
     expect(screen.getByRole("textbox")).toHaveValue("Hello");
   });
 
+  it("does not flash progressive action before id is stable", () => {
+    const { rerender } = render(
+      <InteractiveMarkdown
+        source={':::action{label="Go"}\n'}
+        streaming
+        incomplete="progressive"
+      />,
+    );
+    expect(screen.queryByRole("button", { name: "Go" })).not.toBeInTheDocument();
+
+    rerender(
+      <InteractiveMarkdown
+        source={':::action{id=go label="Go"}\n'}
+        streaming
+        incomplete="progressive"
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Go" })).toBeDisabled();
+  });
+
   it("progressive action shows once id is stable without waiting for JSON", () => {
     const { rerender } = render(
       <InteractiveMarkdown
