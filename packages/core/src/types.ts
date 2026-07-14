@@ -58,3 +58,24 @@ export type ValidationResult = {
   ok: boolean;
   issues: ValidationIssue[];
 };
+
+export type ImdPendingBlock = {
+  type: "choice" | "input" | "switch" | "actions";
+  id?: string;
+  mode?: "single" | "multiple";
+  options?: ImdOption[];
+  items?: ImdActionItem[];
+  label?: string;
+  placeholder?: string;
+  required?: boolean;
+  hint?: string;
+  default?: "on" | "off";
+  defaultValue?: string;
+  /** Text from the opening fence line through EOF. */
+  raw: string;
+};
+
+export type ParseSafeResult = {
+  document: ImdDocument;
+  pending: ImdPendingBlock | null;
+};

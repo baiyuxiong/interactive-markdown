@@ -5,6 +5,8 @@ export type {
   ImdInteractionKind,
   ImdInteractionResult,
   ImdOption,
+  ImdPendingBlock,
+  ParseSafeResult,
   ValidationIssue,
   ValidationResult,
 } from "./types.js";
