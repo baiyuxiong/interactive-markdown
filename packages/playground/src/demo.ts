@@ -20,9 +20,11 @@ export const DEMO_SOURCE: Record<Locale, string> = {
 :::switch{id=notify label="是否开启消息通知？" default=off hint="可随时关闭"}
 :::
 
-:::actions{hint="确认后将进入下一步"}
-- submit | 确认并继续
-- skip | 暂时跳过
+:::action{id=submit label="确认并继续" hint="确认后将进入下一步"}
+{"step":"next"}
+:::
+
+:::action{id=skip label="暂时跳过"}
 :::
 `,
   en: `Hi — let's confirm a few preferences.
@@ -44,9 +46,11 @@ export const DEMO_SOURCE: Record<Locale, string> = {
 :::switch{id=notify label="Enable notifications?" default=off hint="You can turn this off anytime"}
 :::
 
-:::actions{hint="Confirm to continue"}
-- submit | Confirm & continue
-- skip | Skip for now
+:::action{id=submit label="Confirm & continue" hint="Confirm to continue"}
+{"step":"next"}
+:::
+
+:::action{id=skip label="Skip for now"}
 :::
 `,
 };
@@ -81,10 +85,12 @@ export const SYNTAX_SNIPPETS: Record<
 :::`,
     },
     {
-      title: "actions",
-      code: `:::actions{label="请选择下一步"}
-- submit | 确认并继续
-- skip | 暂时跳过
+      title: "action",
+      code: `:::action{id=submit label="确认并继续" hint="确认后将进入下一步"}
+{"step":"next"}
+:::
+
+:::action{id=skip label="暂时跳过"}
 :::`,
     },
   ],
@@ -114,10 +120,12 @@ export const SYNTAX_SNIPPETS: Record<
 :::`,
     },
     {
-      title: "actions",
-      code: `:::actions{label="Next steps"}
-- submit | Confirm & continue
-- skip | Skip for now
+      title: "action",
+      code: `:::action{id=submit label="Confirm & continue" hint="Confirm to continue"}
+{"step":"next"}
+:::
+
+:::action{id=skip label="Skip for now"}
 :::`,
     },
   ],
@@ -146,7 +154,7 @@ export const UI = {
   },
   en: {
     headline: "Stream-friendly interactive Markdown",
-    lede: "Embed single/multi choice, inputs, switches, and actions in Markdown. While streaming, choose hide, placeholder, or progressive for incomplete blocks.",
+    lede: "Embed single/multi choice, inputs, switches, and action buttons in Markdown. While streaming, choose hide, placeholder, or progressive for incomplete blocks.",
     replay: "Replay stream",
     jump: "Show full content",
     jumpDone: "Already complete",

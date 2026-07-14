@@ -8,7 +8,7 @@ import type { BlockComponentProps, ImdComponents } from "@interactive-markdown/r
 type ChoiceBlock = Extract<ImdBlock, { type: "choice" }>;
 type InputBlock = Extract<ImdBlock, { type: "input" }>;
 type SwitchBlock = Extract<ImdBlock, { type: "switch" }>;
-type ActionsBlock = Extract<ImdBlock, { type: "actions" }>;
+type ActionBlock = Extract<ImdBlock, { type: "action" }>;
 
 type Labels = Record<string, never>;
 
@@ -154,30 +154,24 @@ export function createCustomComponents(_labels?: Labels): ImdComponents {
     );
   }
 
-  function Actions({
+  function Action({
     block,
     disabled,
     onSubmit,
-  }: BlockComponentProps<ActionsBlock>) {
+  }: BlockComponentProps<ActionBlock>) {
     return (
-      <div className="imd-custom actions" data-imd="actions">
-        {block.label ? <div className="imd-label">{block.label}</div> : null}
-        <div className="imd-custom-actions-row">
-          {block.items.map((item) => (
-            <button
-              key={item.actionId}
-              type="button"
-              disabled={disabled}
-              onClick={() => onSubmit([item.actionId])}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
+      <div className="imd-custom action" data-imd="action">
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onSubmit([block.id])}
+        >
+          {block.label ?? block.id}
+        </button>
         {block.hint ? <p className="imd-hint below">{block.hint}</p> : null}
       </div>
     );
   }
 
-  return { Choice, Input, Switch, Actions };
+  return { Choice, Input, Switch, Action };
 }

@@ -280,7 +280,7 @@ button {
 .preview-body .imd-choice,
 .preview-body .imd-input,
 .preview-body .imd-switch,
-.preview-body .imd-actions {
+.preview-body .imd-action {
   margin: 0.85rem 0;
   padding: 0.85rem 0.9rem;
   border: 1px solid rgba(19, 34, 28, 0.1);
@@ -482,10 +482,8 @@ button {
   gap: 1rem;
 }
 
-.imd-custom-actions-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
+.imd-custom.action button {
+  cursor: pointer;
 }
 
 .side {

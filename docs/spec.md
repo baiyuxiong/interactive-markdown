@@ -57,9 +57,11 @@ interactive-markdown/          # GitHub 仓库名示例
 :::switch{id=notify label="是否开启消息通知？" default=off hint="可随时关闭"}
 :::
 
-:::actions{hint="确认后将进入下一步"}
-- submit | 确认并继续
-- skip | 暂时跳过
+:::action{id=submit label="确认并继续" hint="确认后将进入下一步"}
+{"step":"next"}
+:::
+
+:::action{id=skip label="暂时跳过"}
 :::
 ```
 
@@ -67,7 +69,7 @@ interactive-markdown/          # GitHub 仓库名示例
 
 **属性引号规则**：值不含空格时可省略引号（如 `label=产品名称`）；含空格 / `"` / `'` / `{}` 时须加引号。引号内同号可用 `\"` / `\'` 转义，也可用相反引号避免转义（`label='他说"好"'`）。
 
-默认 UI 顺序：**label → 表单控件 → hint**。`switch` 为横排例外：同一行 label 与开关**紧邻**（不贴右缘），`hint` 仍在下方。
+默认 UI 顺序：**label → 表单控件 → hint**。`switch` 为横排例外：同一行 label 与开关**紧邻**（不贴右缘），`hint` 仍在下方。`action` 为单按钮：文案取 `label ?? id`，`hint` 在按钮下方。
 
 ### 3.3 块类型
 
@@ -76,14 +78,14 @@ interactive-markdown/          # GitHub 仓库名示例
 | `choice` | `id`, `label?`, `mode=single\|multiple`, `required?`, `hint?` | `- value \| label` 行 |
 | `input` | `id`, `label?`, `placeholder?`, `required?`, `hint?` | 空或默认值 |
 | `switch` | `id`, `label?`, `default=on\|off`, `required?`, `hint?` | 空（无列表体） |
-| `actions` | `label?`, `hint?` | `- actionId \| label` 行 |
+| `action` | `id`, `label?`, `hint?` | 可选 JSON 正文 |
 
 - `switch` 的取值固定为 `"on"` / `"off"`（写入 `values[0]`）；省略 `default` 时为 `off`  
 - `switch` 的 `required` 表示**必须开启**（`values` 须为 `["on"]`），用于同意条款等场景  
 - `choice` / `input` 的 `required`：供 `isFilled` / 业务校验（choice 至少选 1 项；input 经 trim 后非空）。**多选**勾选变化始终触发 `onChoice`（含空数组）；**单选**点选后触发；**input** 在 `required` 未满足时不触发  
 - `input`：**内容变化时**直接触发 `onInput`（无提交按钮）；`required` 未满足时不触发  
 - `input` 容器体内若有文本，视为**默认值**；否则为空  
-- `actions` 块本身无 `id`；点击某按钮时 `result.blockId` = 该行的 `actionId`  
+- `action`：一块一按钮；点击产出 `kind: "action"`，`blockId` / `values[0]` = `id`。正文 trim 后非空则 `JSON.parse`：成功写入 `block.data`，失败写入 `block.dataError`（仍可点击）；空正文则两者皆无。业务从 `result.block.data` / `dataError` 取上下文  
 - 其它控件类型（日期、上传、评分等）**暂不支持**
 - 流式策略：`parse` + `stripIncomplete` + `parseSafe`；React 通过 `incomplete` 选择 hide / placeholder / progressive
 
@@ -101,7 +103,7 @@ type ImdBlock =
   | { type: "choice"; id: string; label?: string; mode: "single" | "multiple"; options: { value: string; label: string }[]; required?: boolean; hint?: string }
   | { type: "input"; id: string; label?: string; placeholder?: string; required?: boolean; hint?: string; defaultValue?: string }
   | { type: "switch"; id: string; label?: string; default?: "on" | "off"; required?: boolean; hint?: string }
-  | { type: "actions"; items: { actionId: string; label: string }[]; label?: string; hint?: string };
+  | { type: "action"; id: string; label?: string; hint?: string; data?: unknown; dataError?: string };
 
 type ImdDocument = {
   source: string;       // 原始 MD
@@ -182,7 +184,7 @@ import { InteractiveMarkdown } from "@interactive-markdown/react";
 type ImdInteractionResult = {
   kind: "choice" | "input" | "switch" | "action";
 
-  /** 对应块上的 id（actions 用 actionId） */
+  /** 对应块上的 id（action 亦为其 id） */
   blockId: string;
 
   /** 用户实际值；switch 为 ["on"] 或 ["off"] */
@@ -251,9 +253,16 @@ type ImdInteractionResult = {
   "kind": "action",
   "blockId": "submit",
   "values": ["submit"],
-  "block": { "type": "actions", "items": [...] }
+  "block": {
+    "type": "action",
+    "id": "submit",
+    "label": "确认并继续",
+    "data": { "step": "next" }
+  }
 }
 ```
+
+业务从 `result.block.data` 读取可选 JSON 上下文；若正文非法 JSON，则存在 `result.block.dataError`（按钮仍可点击）。
 
 ### 5.3 第三层：业务侧如何使用（以聊天为例）
 
@@ -266,10 +275,8 @@ function labelsOf(result: ImdInteractionResult): string[] {
       .filter((o) => result.values.includes(o.value))
       .map((o) => o.label);
   }
-  if (result.block.type === "actions") {
-    return result.block.items
-      .filter((i) => result.values.includes(i.actionId))
-      .map((i) => i.label);
+  if (result.block.type === "action") {
+    return [result.block.label ?? result.block.id];
   }
   if (result.block.type === "switch") {
     const on = result.values[0] === "on";
@@ -293,9 +300,9 @@ function handleInteraction(result: ImdInteractionResult) {
   // 方式 B：只更新本地状态，不立刻发送
   setAnswers((prev) => ({ ...prev, [result.blockId]: result.values }));
 
-  // 方式 C：action 走副作用（打开页、生成文档等）
+  // 方式 C：action 走副作用（打开页、创建会话等）；上下文在 result.block.data
   if (result.kind === "action") {
-    routeToDocument(result.values[0]);
+    routeToDocument(result.values[0], result.block.data);
   }
 }
 ```
@@ -403,7 +410,7 @@ sequenceDiagram
 |---|---|
 | `hide`（默认） | 不渲染 pending（兼容现有 `stripIncomplete` 体验） |
 | `placeholder` | 按类型渲染骨架，不展示半解析真实文案/选项 |
-| `progressive` | 用已稳定解析的字段渐进渲染控件；选项/操作行凑齐一行再追加；**开标签行未提交前、以及 choice/actions 尚无完整选项行前不渲染** |
+| `progressive` | 用已稳定解析的字段渐进渲染控件；choice 选项行凑齐一行再追加；**action 开标签行提交且 `id` 稳定即可展示按钮（不等待 JSON 正文）**；**开标签行未提交前、以及 choice 尚无完整选项行前不渲染** |
 
 可选 `renderPending?.(pending)` 覆盖默认 pending UI。设计细节见 `docs/superpowers/specs/2026-07-14-streaming-incomplete-modes-design.md`。
 
@@ -418,13 +425,13 @@ source
   → streaming=false: parse(blocks)
   → streaming=true:  parseSafe → blocks + pending（按 incomplete / renderPending）
   → markdown 块：react-markdown + remark-gfm
-  → choice/input/switch/actions：默认组件或 components 覆盖
+  → choice/input/switch/action：默认组件或 components 覆盖
   → pending：hide | placeholder | progressive（incomplete=true, disabled）
 ```
 
-- 自定义 UI 通过 `components.Choice|Input|Switch|Actions` 覆盖（headless 友好）  
+- 自定义 UI 通过 `components.Choice|Input|Switch|Action` 覆盖（headless 友好）  
 - `BlockComponentProps` 含可选 `incomplete?: boolean`（流式 pending 时为 `true`）  
-- 默认组件带轻量 class（`imd-choice` 等），无强制主题  
+- 默认组件带轻量 class（`imd-choice` / `imd-action` 等），无强制主题  
 - 不依赖 `rehype-raw`（更安全）
 
 ```tsx
@@ -441,7 +448,7 @@ source
     Choice: MyChoice,
     Input: MyInput,
     Switch: MySwitch,
-    Actions: MyActions,
+    Action: MyAction,
   }}
 />
 ```
@@ -496,6 +503,6 @@ source
 | 怎么给程序用？ | 用 `result.blockId` + `result.values` + `result.kind` |
 | 怎么发给后端？ | 业务调用 `toReplyPayload(result)` 或自行组包 |
 | 提示文案怎么写？ | 题干用块属性 `label?`；旁注用 `hint?`；长叙述用普通 Markdown。不设独立 `:::hint` 块 |
-| 支持哪些控件？ | `choice` / `input` / `switch` / `actions`；其它类型暂不支持 |
+| 支持哪些控件？ | `choice` / `input` / `switch` / `action`；其它类型暂不支持 |
 | 库管不管发送？ | **不管**，只负责解析、渲染、产出结构化结果 |
 

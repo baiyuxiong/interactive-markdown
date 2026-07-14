@@ -8,7 +8,7 @@
 
 ## English
 
-Stream-friendly Interactive Markdown: embed `choice` / `input` / `switch` / `actions` in Markdown for AI chat and forms.
+Stream-friendly Interactive Markdown: embed `choice` / `input` / `switch` / `action` in Markdown for AI chat and forms.
 
 ![Demo](./docs/assets/demo.gif)
 
@@ -38,7 +38,9 @@ import { InteractiveMarkdown } from "@interactive-markdown/react";
     },
     onInput: (result) => {},
     onSwitch: (result) => {},
-    onAction: (result) => {},
+    onAction: (result) => {
+      // optional JSON context: result.block.data / result.block.dataError
+    },
   }}
 />
 ```
@@ -87,13 +89,15 @@ Optional `renderPending={(pending) => ...}` overrides the pending region.
 :::switch{id=notify label="Notifications" default=off}
 :::
 
-:::actions
-- submit | Confirm & continue
-- skip | Skip for now
+:::action{id=submit label="Confirm & continue"}
+{"step":"next"}
+:::
+
+:::action{id=skip label="Skip for now"}
 :::
 ```
 
-Default UI order: **label → control → hint**. Quote attribute values that contain spaces.
+Default UI order: **label → control → hint**. Quote attribute values that contain spaces. Action click payload context lives on `result.block.data` (or `dataError` if the body failed `JSON.parse`).
 
 ### Development
 
@@ -124,7 +128,7 @@ MIT
 
 ## 中文
 
-面向流式场景的交互式 Markdown：在 Markdown 中嵌入 `choice` / `input` / `switch` / `actions`，适用于 AI 对话与表单。
+面向流式场景的交互式 Markdown：在 Markdown 中嵌入 `choice` / `input` / `switch` / `action`，适用于 AI 对话与表单。
 
 ![演示](./docs/assets/demo.gif)
 
@@ -154,7 +158,9 @@ import { InteractiveMarkdown } from "@interactive-markdown/react";
     },
     onInput: (result) => {},
     onSwitch: (result) => {},
-    onAction: (result) => {},
+    onAction: (result) => {
+      // 可选 JSON 上下文：result.block.data / result.block.dataError
+    },
   }}
 />
 ```
@@ -203,13 +209,15 @@ import { InteractiveMarkdown } from "@interactive-markdown/react";
 :::switch{id=notify label="消息通知" default=off}
 :::
 
-:::actions
-- submit | 确认并继续
-- skip | 暂时跳过
+:::action{id=submit label="确认并继续"}
+{"step":"next"}
+:::
+
+:::action{id=skip label="暂时跳过"}
 :::
 ```
 
-默认 UI 顺序：**label → 控件 → hint**。属性值含空格时请加引号。
+默认 UI 顺序：**label → 控件 → hint**。属性值含空格时请加引号。点击 action 时，可选 JSON 上下文在 `result.block.data`（正文非法 JSON 时为 `result.block.dataError`）。
 
 ### 开发
 

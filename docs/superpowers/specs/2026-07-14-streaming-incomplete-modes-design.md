@@ -37,11 +37,10 @@ parseSafe(source: string): {
 };
 
 type ImdPendingBlock = {
-  type: "choice" | "input" | "switch" | "actions";
+  type: "choice" | "input" | "switch" | "action";
   id?: string;
   mode?: "single" | "multiple";
   options?: ImdOption[];       // fully parsed option rows only
-  items?: ImdActionItem[];     // fully parsed action rows only
   label?: string;
   placeholder?: string;
   required?: boolean;
@@ -69,11 +68,12 @@ Shared rules:
 |---|---|---|
 | `hide` (default) | Not rendered | After close |
 | `placeholder` | Type-based skeleton only; no half-parsed real labels/options | After close |
-| `progressive` | Real partial widget from stably parsed fields; complete option/action rows appear as they land | After close |
+| `progressive` | Real partial widget from stably parsed fields; choice option rows appear as they land; action may show once `id` is stable (does not wait for JSON body) | After close |
 
 ### Progressive parsing details
 
-- Append a `choice` / `actions` row only when the full `- value | label` line is parseable; hide partial lines.
+- Append a `choice` row only when the full `- value | label` line is parseable; hide partial lines.
+- For `action`, show the button after the opening fence is committed and `id` is stable; do not wait for JSON body (`data` / `dataError` apply only after close).
 - Fill attributes only after the opening fence line is fully available and attrs are stably parsed.
 - Default components receive `incomplete: true` and a `data-imd-pending` (or equivalent) marker for styling.
 
