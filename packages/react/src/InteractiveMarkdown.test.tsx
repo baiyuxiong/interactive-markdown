@@ -136,4 +136,69 @@ describe("InteractiveMarkdown", () => {
     );
     expect(screen.getByText("CustomChoice")).toBeInTheDocument();
   });
+
+  it("hide mode (default) still conceals incomplete trailing blocks", () => {
+    const incomplete = sample + "\n\n:::choice{id=more mode=single}\n- a | A";
+    render(<InteractiveMarkdown source={incomplete} streaming />);
+    expect(screen.queryByText("A")).not.toBeInTheDocument();
+  });
+
+  it("progressive mode shows complete option rows from pending", () => {
+    const incomplete = sample + "\n\n:::choice{id=more mode=single}\n- a | A\n- b";
+    render(
+      <InteractiveMarkdown
+        source={incomplete}
+        streaming
+        incomplete="progressive"
+      />,
+    );
+    expect(screen.getByText("A")).toBeInTheDocument();
+    expect(screen.queryByText("B")).not.toBeInTheDocument();
+  });
+
+  it("progressive pending ignores clicks", async () => {
+    const user = userEvent.setup();
+    const onChoice = vi.fn();
+    const incomplete =
+      ":::choice{id=more mode=single}\n- a | A";
+    render(
+      <InteractiveMarkdown
+        source={incomplete}
+        streaming
+        incomplete="progressive"
+        interactive={{ onChoice }}
+      />,
+    );
+    await user.click(screen.getByRole("radio", { name: "A" }));
+    expect(onChoice).not.toHaveBeenCalled();
+  });
+
+  it("placeholder mode renders pending skeleton, not option labels", () => {
+    const incomplete =
+      "Hello\n\n:::choice{id=more mode=single}\n- a | SecretLabel";
+    render(
+      <InteractiveMarkdown
+        source={incomplete}
+        streaming
+        incomplete="placeholder"
+      />,
+    );
+    expect(screen.getByText("Hello")).toBeInTheDocument();
+    expect(screen.queryByText("SecretLabel")).not.toBeInTheDocument();
+    expect(document.querySelector("[data-imd-pending]")).toBeTruthy();
+  });
+
+  it("renderPending overrides default pending UI", () => {
+    const incomplete = ":::choice{id=more mode=single}\n- a | A";
+    render(
+      <InteractiveMarkdown
+        source={incomplete}
+        streaming
+        incomplete="progressive"
+        renderPending={() => <div>CustomPending</div>}
+      />,
+    );
+    expect(screen.getByText("CustomPending")).toBeInTheDocument();
+    expect(screen.queryByText("A")).not.toBeInTheDocument();
+  });
 });

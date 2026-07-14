@@ -2,8 +2,8 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   parse,
+  parseSafe,
   serialize,
-  stripIncomplete,
   validate,
   type ImdBlock,
 } from "@interactive-markdown/core";
@@ -14,6 +14,10 @@ import {
   DefaultSwitch,
   emitForBlock,
 } from "./defaults.js";
+import {
+  DefaultPendingPlaceholder,
+  renderProgressivePending,
+} from "./pending.js";
 import type { InteractiveMarkdownProps } from "./types.js";
 
 export type {
@@ -39,14 +43,23 @@ function DefaultMarkdown({ children }: { children: string }) {
 export function InteractiveMarkdown({
   source,
   streaming = false,
+  incomplete = "hide",
+  renderPending,
   answers,
   interactive,
   components,
   meta,
   className,
 }: InteractiveMarkdownProps) {
-  const text = streaming ? stripIncomplete(source) : source;
-  const doc = parse(text);
+  let blocks;
+  let pending = null;
+  if (streaming) {
+    const safe = parseSafe(source);
+    blocks = safe.document.blocks;
+    pending = safe.pending;
+  } else {
+    blocks = parse(source).blocks;
+  }
   const disabled = interactive?.disabled ?? false;
   const submitOnSelect = interactive?.submitOnSelect ?? true;
 
@@ -76,18 +89,37 @@ export function InteractiveMarkdown({
     }
   };
 
+  let pendingNode = null;
+  if (streaming && pending) {
+    if (renderPending) {
+      pendingNode = renderPending(pending);
+    } else if (incomplete === "placeholder") {
+      pendingNode = <DefaultPendingPlaceholder pending={pending} />;
+    } else if (incomplete === "progressive") {
+      pendingNode = renderProgressivePending({
+        pending,
+        Choice,
+        Input,
+        Switch,
+        Actions,
+        meta,
+      });
+    }
+    // hide → null
+  }
+
   return (
     <div className={className} data-imd-root="">
-      {doc.blocks.map((block, index) => {
+      {blocks.map((block, index) => {
         if (block.type === "markdown") {
           return <Md key={`md-${index}`}>{block.text}</Md>;
         }
 
-        const check = validate({ source: text, blocks: [block] });
+        const check = validate({ source, blocks: [block] });
         if (!check.ok) {
           return (
             <Md key={`bad-${index}`}>
-              {serialize({ source: text, blocks: [block] })}
+              {serialize({ source, blocks: [block] })}
             </Md>
           );
         }
@@ -143,6 +175,7 @@ export function InteractiveMarkdown({
           />
         );
       })}
+      {pendingNode}
     </div>
   );
 }
