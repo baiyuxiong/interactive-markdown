@@ -142,7 +142,7 @@ export const SYNTAX_SNIPPETS: Record<
 export const UI = {
   zh: {
     headline: "流式友好的可交互 Markdown",
-    lede: "在正文中嵌入单选、多选、填写、开关与操作按钮；未闭合的块在流式输出时不会闪现。",
+    lede: "在正文中嵌入单选、多选、填写、开关与操作按钮；流式时可选择隐藏、占位或渐进展示未闭合块。",
     replay: "重新流式播放",
     jump: "直接显示完整内容",
     jumpDone: "已是完整内容",
@@ -165,7 +165,7 @@ export const UI = {
   },
   en: {
     headline: "Stream-friendly interactive Markdown",
-    lede: "Embed single/multi choice, inputs, switches, and actions in Markdown. Incomplete blocks never flash while streaming.",
+    lede: "Embed single/multi choice, inputs, switches, and actions in Markdown. While streaming, choose hide, placeholder, or progressive for incomplete blocks.",
     replay: "Replay stream",
     jump: "Show full content",
     jumpDone: "Already complete",

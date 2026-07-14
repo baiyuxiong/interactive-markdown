@@ -1,7 +1,7 @@
 # Streaming Incomplete Modes Design
 
 Date: 2026-07-14  
-Status: Approved
+Status: Implemented
 
 ## Problem
 
