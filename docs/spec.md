@@ -86,6 +86,7 @@ interactive-markdown/          # GitHub 仓库名示例
 - `input`：**内容变化时**直接触发 `onInput`（无提交按钮）；`required` 未满足时不触发  
 - `input` 容器体内若有文本，视为**默认值**；否则为空  
 - `action`：一块一按钮；点击产出 `kind: "action"`，`blockId` / `values[0]` = `id`。正文 trim 后非空则 `JSON.parse`：成功写入 `block.data`，失败写入 `block.dataError`（仍可点击）；空正文则两者皆无。业务从 `result.block.data` / `dataError` 取上下文  
+- `serialize` 对 `action`：有 `data`（含 `null`）则 `JSON.stringify` 写入正文；仅有 `dataError` 时写**空正文**（错误不写回 MD）。损坏 JSON 的完整回放依赖 `document.source`  
 - 其它控件类型（日期、上传、评分等）**暂不支持**
 - 流式策略：`parse` + `stripIncomplete` + `parseSafe`；React 通过 `incomplete` 选择 hide / placeholder / progressive
 
