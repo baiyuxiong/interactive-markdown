@@ -112,11 +112,34 @@ describe("parse", () => {
     });
   });
 
+  it("treats whitespace-only action body as empty", () => {
+    const doc = parse(":::action{id=a}\n   \n:::");
+    expect(doc.blocks).toEqual([{ type: "action", id: "a" }]);
+  });
+
+  it("trims action body before JSON.parse", () => {
+    expect(parse(':::action{id=a}\n  {"k":1}  \n:::').blocks[0]).toMatchObject({
+      type: "action",
+      data: { k: 1 },
+    });
+  });
+
+  it("parses number and boolean JSON into data", () => {
+    expect(parse(":::action{id=a}\n42\n:::").blocks[0]).toMatchObject({
+      data: 42,
+    });
+    expect(parse(":::action{id=a}\ntrue\n:::").blocks[0]).toMatchObject({
+      data: true,
+    });
+  });
+
   it("sets dataError for invalid JSON but keeps action block", () => {
     const doc = parse(":::action{id=broken}\n{not json\n:::");
     const block = doc.blocks[0];
     expect(block).toMatchObject({ type: "action", id: "broken" });
     expect(block).toHaveProperty("dataError");
+    expect(typeof (block as { dataError?: string }).dataError).toBe("string");
+    expect((block as { dataError?: string }).dataError!.length).toBeGreaterThan(0);
     expect(block && "data" in block && block.data).toBeUndefined();
     expect(validate(doc).ok).toBe(true);
   });
