@@ -156,4 +156,28 @@ describe("parseSafe", () => {
       options: [{ value: "phone", label: "Phone" }],
     });
   });
+
+  it("pending action does not parse JSON body until closed", () => {
+    const open = ':::action{id=go label="Go"}\n{"a":1';
+    const { document, pending } = parseSafe(open);
+    expect(document.blocks).toEqual([]);
+    expect(pending).toMatchObject({
+      type: "action",
+      id: "go",
+      label: "Go",
+    });
+    expect(pending).not.toHaveProperty("data");
+    expect(pending).not.toHaveProperty("dataError");
+  });
+
+  it("closed action after pending shape has data", () => {
+    const src = ':::action{id=go label="Go"}\n{"a":1}\n:::';
+    const { document, pending } = parseSafe(src);
+    expect(pending).toBeNull();
+    expect(document.blocks[0]).toMatchObject({
+      type: "action",
+      id: "go",
+      data: { a: 1 },
+    });
+  });
 });

@@ -64,6 +64,12 @@ describe("isFilled", () => {
     expect(isFilled(requiredMulti, [])).toBe(false);
     expect(isFilled(requiredMulti, ["a"])).toBe(true);
   });
+
+  it("treats action filled when one value", () => {
+    const action: ImdBlock = { type: "action", id: "go", label: "Go" };
+    expect(isFilled(action, [])).toBe(false);
+    expect(isFilled(action, ["go"])).toBe(true);
+  });
 });
 
 describe("buildInteractionResult", () => {
