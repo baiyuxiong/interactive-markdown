@@ -173,6 +173,25 @@ describe("InteractiveMarkdown", () => {
     expect(onChoice).not.toHaveBeenCalled();
   });
 
+  it("progressive input updates defaultValue as body streams", () => {
+    const { rerender } = render(
+      <InteractiveMarkdown
+        source={":::input{id=name}\nHe"}
+        streaming
+        incomplete="progressive"
+      />,
+    );
+    expect(screen.getByRole("textbox")).toHaveValue("He");
+    rerender(
+      <InteractiveMarkdown
+        source={":::input{id=name}\nHello"}
+        streaming
+        incomplete="progressive"
+      />,
+    );
+    expect(screen.getByRole("textbox")).toHaveValue("Hello");
+  });
+
   it("placeholder mode renders pending skeleton, not option labels", () => {
     const incomplete =
       "Hello\n\n:::choice{id=more mode=single}\n- a | SecretLabel";

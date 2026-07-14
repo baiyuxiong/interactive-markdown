@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import {
   buildInteractionResult,
   isFilled,
@@ -99,6 +99,12 @@ export function DefaultInput({
   const initial = controlled?.[0] ?? block.defaultValue ?? "";
   const [local, setLocal] = useState(initial);
   const value = controlled?.[0] ?? local;
+
+  useEffect(() => {
+    if (incomplete && controlled === undefined) {
+      setLocal(block.defaultValue ?? "");
+    }
+  }, [incomplete, controlled, block.defaultValue]);
 
   return (
     <div
