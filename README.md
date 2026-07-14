@@ -44,10 +44,22 @@ import { InteractiveMarkdown } from "@interactive-markdown/react";
 #### Streaming
 
 ```tsx
-<InteractiveMarkdown source={partialText} streaming />
+<InteractiveMarkdown
+  source={partialText}
+  streaming
+  incomplete="progressive" // "hide" | "placeholder" | "progressive"
+/>
 ```
 
-Unclosed `:::` blocks are stripped so incomplete widgets never flash.
+While `streaming` is true, trailing unclosed `:::` blocks are handled by `incomplete`:
+
+| Value | Behavior |
+|---|---|
+| `hide` (default) | Do not render the pending block (legacy) |
+| `placeholder` | Show a type skeleton |
+| `progressive` | Grow the real widget as rows/attrs stabilize; not interactive until closed |
+
+Optional `renderPending={(pending) => ...}` overrides the pending region.
 
 #### History replay
 
@@ -144,10 +156,22 @@ import { InteractiveMarkdown } from "@interactive-markdown/react";
 #### 流式渲染
 
 ```tsx
-<InteractiveMarkdown source={partialText} streaming />
+<InteractiveMarkdown
+  source={partialText}
+  streaming
+  incomplete="progressive" // "hide" | "placeholder" | "progressive"
+/>
 ```
 
-未闭合的 `:::` 块会被剥离，避免不完整控件闪现。
+`streaming` 为 true 时，末尾未闭合的 `:::` 块由 `incomplete` 处理：
+
+| 取值 | 行为 |
+|---|---|
+| `hide`（默认） | 不渲染 pending 块（旧行为） |
+| `placeholder` | 显示类型骨架 |
+| `progressive` | 随行/属性稳定渐进渲染真实控件；闭合前不可交互 |
+
+可选 `renderPending={(pending) => ...}` 覆盖 pending 区域。
 
 #### 历史回放
 

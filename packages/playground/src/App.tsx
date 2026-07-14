@@ -3,6 +3,7 @@ import {
   InteractiveMarkdown,
   type ImdAnswers,
   type ImdInteractionResult,
+  type IncompleteMode,
 } from "@interactive-markdown/react";
 import { createCustomComponents } from "./customComponents.js";
 import { DEMO_SOURCE, SYNTAX_SNIPPETS, UI, type Locale } from "./demo.js";
@@ -73,6 +74,7 @@ export function App() {
 
   const [runId, setRunId] = useState(0);
   const [view, setView] = useState<"preview" | "source" | "custom">("preview");
+  const [incomplete, setIncomplete] = useState<IncompleteMode>("progressive");
   const { text, streaming, done, startStream, showComplete } = useStream(
     source,
     60,
@@ -189,9 +191,37 @@ export function App() {
                 {t.custom}
               </button>
             </div>
-            <span className={`pill ${streaming ? "busy" : "idle"}`}>
-              {streaming ? t.streaming : done ? t.complete : "idle"}
-            </span>
+            <div className="panel-head-meta">
+              <div
+                className="incomplete-mode"
+                role="group"
+                aria-label={t.incomplete}
+              >
+                {(
+                  [
+                    ["hide", t.incompleteHide],
+                    ["placeholder", t.incompletePlaceholder],
+                    ["progressive", t.incompleteProgressive],
+                  ] as const
+                ).map(([mode, label]) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    className={
+                      incomplete === mode
+                        ? "incomplete-btn active"
+                        : "incomplete-btn"
+                    }
+                    onClick={() => setIncomplete(mode)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <span className={`pill ${streaming ? "busy" : "idle"}`}>
+                {streaming ? t.streaming : done ? t.complete : "idle"}
+              </span>
+            </div>
           </div>
           {view === "source" ? (
             <pre className="source-body" aria-label="Markdown source">
@@ -217,6 +247,7 @@ export function App() {
               <InteractiveMarkdown
                 source={text}
                 streaming={streaming}
+                incomplete={incomplete}
                 answers={answers}
                 components={view === "custom" ? customComponents : undefined}
                 interactive={{

@@ -224,6 +224,37 @@ button {
   }
 }
 
+.panel-head-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.incomplete-mode {
+  display: inline-flex;
+  gap: 0.15rem;
+  padding: 0.15rem;
+  border-radius: 999px;
+  background: rgba(19, 34, 28, 0.06);
+}
+
+.incomplete-btn {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.incomplete-btn.active {
+  background: rgba(31, 107, 84, 0.14);
+  color: var(--pine-deep);
+}
+
 .pill {
   font-family: var(--mono);
   font-size: 0.75rem;
@@ -350,6 +381,27 @@ button {
   margin: 0.65rem 0 0;
   color: var(--muted);
   font-size: 0.88rem;
+}
+
+.imd-pending-placeholder {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+  opacity: 0.7;
+}
+
+.imd-pending-bar {
+  height: 0.75rem;
+  border-radius: 4px;
+  background: color-mix(in oklab, currentColor 12%, transparent);
+}
+
+.imd-pending-title {
+  width: 40%;
+}
+
+[data-imd-pending] {
+  opacity: 0.85;
 }
 
 .imd-custom-switch-row {
