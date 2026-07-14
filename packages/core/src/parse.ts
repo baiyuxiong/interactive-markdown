@@ -1,5 +1,4 @@
 import type {
-  ImdActionItem,
   ImdBlock,
   ImdDocument,
   ImdOption,
@@ -25,12 +24,12 @@ type ScanResult = {
 
 function isKnownPendingName(
   name: string,
-): name is "choice" | "input" | "switch" | "actions" {
+): name is "choice" | "input" | "switch" | "action" {
   return (
     name === "choice" ||
     name === "input" ||
     name === "switch" ||
-    name === "actions"
+    name === "action"
   );
 }
 
@@ -183,20 +182,23 @@ function toBlock(d: RawDirective): ImdBlock | null {
         ...boolHint(d.attrs),
       };
     }
-    case "actions":
+    case "action": {
+      const parsed = parseActionBody(d.body);
       return {
-        type: "actions",
-        items: parseActions(d.body),
+        type: "action",
+        id: str(d.attrs.id) ?? "",
         label: str(d.attrs.label),
         hint: str(d.attrs.hint),
+        ...parsed,
       };
+    }
     default:
       return null;
   }
 }
 
 function toPending(
-  name: "choice" | "input" | "switch" | "actions",
+  name: "choice" | "input" | "switch" | "action",
   attrText: string,
   bodyLines: string[],
   raw: string,
@@ -238,13 +240,12 @@ function toPending(
         ...base,
       };
     }
-    case "actions":
+    case "action":
       return {
-        type: "actions",
-        items: parseActions(body),
+        type: "action",
         label: str(attrs.label),
         hint: str(attrs.hint),
-        raw,
+        ...base,
       };
   }
 }
@@ -269,16 +270,16 @@ function parseOptions(body: string): ImdOption[] {
     });
 }
 
-function parseActions(body: string): ImdActionItem[] {
-  return body
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .flatMap((line) => {
-      const m = /^-\s+(.+?)\s*\|\s*(.+)$/.exec(line);
-      if (!m) return [];
-      return [{ actionId: m[1]!.trim(), label: m[2]!.trim() }];
-    });
+function parseActionBody(body: string): { data?: unknown; dataError?: string } {
+  const trimmed = body.trim();
+  if (!trimmed) return {};
+  try {
+    return { data: JSON.parse(trimmed) as unknown };
+  } catch (err) {
+    return {
+      dataError: err instanceof Error ? err.message : String(err),
+    };
+  }
 }
 
 function matchOpenFence(line: string): { name: string; attrText: string } | null {

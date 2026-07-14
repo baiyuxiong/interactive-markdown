@@ -140,7 +140,9 @@ describe("parse", () => {
     expect(block).toHaveProperty("dataError");
     expect(typeof (block as { dataError?: string }).dataError).toBe("string");
     expect((block as { dataError?: string }).dataError!.length).toBeGreaterThan(0);
-    expect(block && "data" in block && block.data).toBeUndefined();
+    expect(
+      block && block.type === "action" ? block.data : undefined,
+    ).toBeUndefined();
     expect(validate(doc).ok).toBe(true);
   });
 

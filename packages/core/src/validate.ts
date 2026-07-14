@@ -32,9 +32,7 @@ function validateBlock(block: ImdBlock, index: number): ValidationIssue[] {
       }
       return issues;
     }
-    case "actions":
-      return block.items.length
-        ? []
-        : [{ path, message: "actions requires at least one item" }];
+    case "action":
+      return block.id ? [] : [{ path, message: "action requires id" }];
   }
 }

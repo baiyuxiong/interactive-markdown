@@ -22,7 +22,7 @@ export function isFilled(block: ImdBlock, values: string[]): boolean {
       if (block.required) return v === "on";
       return true;
     }
-    case "actions":
+    case "action":
       return values.length === 1;
     case "markdown":
       return true;
@@ -37,7 +37,9 @@ export function buildInteractionResult(
 ): ImdInteractionResult {
   const blockId =
     kind === "action"
-      ? (values[0] ?? "")
+      ? block.type === "action"
+        ? block.id
+        : (values[0] ?? "")
       : "id" in block
         ? block.id
         : "";

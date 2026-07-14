@@ -40,10 +40,16 @@ function serializeBlock(block: ImdBlock): string {
       });
       return `:::switch${attrs}\n:::`;
     }
-    case "actions": {
-      const attrs = attrsToString({ label: block.label, hint: block.hint });
-      const body = block.items.map((i) => `- ${i.actionId} | ${i.label}`).join("\n");
-      return `:::actions${attrs}\n${body}\n:::`;
+    case "action": {
+      const attrs = attrsToString({
+        id: block.id,
+        label: block.label,
+        hint: block.hint,
+      });
+      if (block.data !== undefined) {
+        return `:::action${attrs}\n${JSON.stringify(block.data)}\n:::`;
+      }
+      return `:::action${attrs}\n:::`;
     }
   }
 }

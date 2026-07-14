@@ -31,12 +31,11 @@ const sw: ImdBlock = {
   label: "通知",
 };
 
-const actions: ImdBlock = {
-  type: "actions",
-  items: [
-    { actionId: "submit", label: "确认并继续" },
-    { actionId: "skip", label: "暂时跳过" },
-  ],
+const action: ImdBlock = {
+  type: "action",
+  id: "submit",
+  label: "确认并继续",
+  data: { sessionName: "审批细节" },
 };
 
 describe("isFilled", () => {
@@ -75,11 +74,11 @@ describe("buildInteractionResult", () => {
       values: ["phone"],
       block: choice,
     });
-    expect(buildInteractionResult("action", actions, ["submit"])).toEqual({
+    expect(buildInteractionResult("action", action, ["submit"])).toEqual({
       kind: "action",
       blockId: "submit",
       values: ["submit"],
-      block: actions,
+      block: action,
     });
   });
 });
