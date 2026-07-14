@@ -17,14 +17,13 @@ const sample = [
   ':::switch{id=notify label="是否开启消息通知？" default=off hint="可随时关闭"}',
   ":::",
   "",
-  ':::actions{label="请选择下一步" hint="确认后将进入下一步"}',
-  "- submit | 确认并继续",
-  "- skip | 暂时跳过",
+  ':::action{id=submit label="确认并继续" hint="确认后将进入下一步"}',
+  '{"next":"review"}',
   ":::",
 ].join("\n");
 
 describe("parse", () => {
-  it("parses choice, input, switch, and actions blocks", () => {
+  it("parses choice, input, switch, and action blocks", () => {
     const doc = parse(sample);
     expect(doc.source).toBe(sample);
     expect(doc.blocks).toEqual([
@@ -60,13 +59,11 @@ describe("parse", () => {
       },
       { type: "markdown", text: "\n\n" },
       {
-        type: "actions",
-        label: "请选择下一步",
+        type: "action",
+        id: "submit",
+        label: "确认并继续",
         hint: "确认后将进入下一步",
-        items: [
-          { actionId: "submit", label: "确认并继续" },
-          { actionId: "skip", label: "暂时跳过" },
-        ],
+        data: { next: "review" },
       },
     ]);
   });
@@ -94,6 +91,58 @@ describe("parse", () => {
     const doc = parse(src);
     expect(doc.blocks).toEqual([{ type: "markdown", text: src }]);
   });
+
+  it("parses optional empty action body without data", () => {
+    const doc = parse(':::action{id=skip label="暂时跳过"}\n:::');
+    expect(doc.blocks).toEqual([
+      { type: "action", id: "skip", label: "暂时跳过" },
+    ]);
+  });
+
+  it("parses any JSON value into data", () => {
+    expect(parse(':::action{id=a}\n[1,2]\n:::').blocks[0]).toMatchObject({
+      type: "action",
+      data: [1, 2],
+    });
+    expect(parse(':::action{id=a}\n"x"\n:::').blocks[0]).toMatchObject({
+      data: "x",
+    });
+    expect(parse(":::action{id=a}\nnull\n:::").blocks[0]).toMatchObject({
+      data: null,
+    });
+  });
+
+  it("sets dataError for invalid JSON but keeps action block", () => {
+    const doc = parse(":::action{id=broken}\n{not json\n:::");
+    const block = doc.blocks[0];
+    expect(block).toMatchObject({ type: "action", id: "broken" });
+    expect(block).toHaveProperty("dataError");
+    expect(block && "data" in block && block.data).toBeUndefined();
+    expect(validate(doc).ok).toBe(true);
+  });
+
+  it("treats closed :::actions as markdown (removed)", () => {
+    const src = ":::actions\n- a | A\n:::";
+    expect(parse(src).blocks).toEqual([{ type: "markdown", text: src }]);
+  });
+
+  it("round-trips action with data via serialize", () => {
+    const src = [
+      ':::action{id=create-sub-session label="创建子会话"}',
+      '{"sessionName":"审批细节"}',
+      ":::",
+    ].join("\n");
+    const doc = parse(src);
+    const again = parse(serialize(doc));
+    expect(again.blocks).toEqual(doc.blocks);
+  });
+
+  it("serialize drops dataError (empty body)", () => {
+    const doc = parse(":::action{id=x}\n{bad\n:::");
+    const out = serialize(doc);
+    expect(out).toBe(":::action{id=x}\n:::");
+    expect(parse(out).blocks[0]).toEqual({ type: "action", id: "x" });
+  });
 });
 
 describe("validate", () => {
@@ -106,6 +155,11 @@ describe("validate", () => {
     const result = validate(doc);
     expect(result.ok).toBe(false);
     expect(result.issues.length).toBeGreaterThan(0);
+  });
+
+  it("requires action id", () => {
+    const doc = parse(":::action{label=Go}\n:::");
+    expect(validate(doc).ok).toBe(false);
   });
 });
 
