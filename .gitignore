@@ -1,0 +1,21 @@
+# Coverage
+coverage/
+*.lcov
+
+# Build
+dist/
+packages/*/dist/
+
+# Deps
+node_modules/
+
+# Git worktrees
+.worktrees/
+
+# Logs / OS
+*.log
+.DS_Store
+*.tsbuildinfo
+.vite/
+
+AGENTS.md
