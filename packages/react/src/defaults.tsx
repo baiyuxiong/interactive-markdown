@@ -17,6 +17,7 @@ export function DefaultChoice({
   values: controlled,
   onSubmit,
   submitOnSelect = true,
+  incomplete,
 }: BlockComponentProps<ChoiceBlock>) {
   const [local, setLocal] = useState<string[]>(controlled ?? []);
   const selected = controlled ?? local;
@@ -30,7 +31,12 @@ export function DefaultChoice({
   };
 
   return (
-    <fieldset className="imd-choice" disabled={disabled} data-imd="choice">
+    <fieldset
+      className="imd-choice"
+      disabled={disabled}
+      data-imd="choice"
+      data-imd-pending={incomplete ? "" : undefined}
+    >
       {block.hint ? <legend className="imd-hint">{block.hint}</legend> : null}
       <div role={block.mode === "single" ? "radiogroup" : "group"}>
         {block.options.map((opt) => {
@@ -87,6 +93,7 @@ export function DefaultInput({
   disabled,
   values: controlled,
   onSubmit,
+  incomplete,
 }: BlockComponentProps<InputBlock>) {
   const id = useId();
   const initial = controlled?.[0] ?? block.defaultValue ?? "";
@@ -94,7 +101,11 @@ export function DefaultInput({
   const value = controlled?.[0] ?? local;
 
   return (
-    <div className="imd-input" data-imd="input">
+    <div
+      className="imd-input"
+      data-imd="input"
+      data-imd-pending={incomplete ? "" : undefined}
+    >
       {block.label ? (
         <label htmlFor={id}>
           {block.label}
@@ -130,6 +141,7 @@ export function DefaultSwitch({
   disabled,
   values: controlled,
   onSubmit,
+  incomplete,
 }: BlockComponentProps<SwitchBlock>) {
   const initial = controlled?.[0] ?? block.default ?? "off";
   const [local, setLocal] = useState(initial);
@@ -137,7 +149,11 @@ export function DefaultSwitch({
   const on = value === "on";
 
   return (
-    <div className="imd-switch" data-imd="switch">
+    <div
+      className="imd-switch"
+      data-imd="switch"
+      data-imd-pending={incomplete ? "" : undefined}
+    >
       {block.hint ? <p className="imd-hint">{block.hint}</p> : null}
       <label>
         <input
@@ -165,9 +181,14 @@ export function DefaultActions({
   block,
   disabled,
   onSubmit,
+  incomplete,
 }: BlockComponentProps<ActionsBlock>) {
   return (
-    <div className="imd-actions" data-imd="actions">
+    <div
+      className="imd-actions"
+      data-imd="actions"
+      data-imd-pending={incomplete ? "" : undefined}
+    >
       {block.hint ? <p className="imd-hint">{block.hint}</p> : null}
       {block.items.map((item) => (
         <button

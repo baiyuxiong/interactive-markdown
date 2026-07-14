@@ -1,8 +1,11 @@
 import type {
   ImdBlock,
   ImdInteractionResult,
+  ImdPendingBlock,
 } from "@interactive-markdown/core";
 import type { ComponentType, ReactNode } from "react";
+
+export type IncompleteMode = "hide" | "placeholder" | "progressive";
 
 export type ImdAnswers = Record<string, { values: string[] }>;
 
@@ -23,6 +26,8 @@ export type BlockComponentProps<T extends ImdBlock = ImdBlock> = {
   onSubmit: (values: string[]) => void;
   /** choice only: fire onSelect immediately in single mode (default true) */
   submitOnSelect?: boolean;
+  /** True while rendering a streaming pending widget. */
+  incomplete?: boolean;
 };
 
 export type ImdComponents = {
@@ -44,6 +49,9 @@ export type ImdComponents = {
 export type InteractiveMarkdownProps = {
   source: string;
   streaming?: boolean;
+  /** Streaming-only. Default "hide". */
+  incomplete?: IncompleteMode;
+  renderPending?: (pending: ImdPendingBlock) => ReactNode;
   answers?: ImdAnswers;
   interactive?: InteractiveHandlers;
   components?: ImdComponents;
