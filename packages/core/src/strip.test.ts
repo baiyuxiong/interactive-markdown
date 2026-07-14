@@ -35,4 +35,11 @@ describe("stripIncomplete", () => {
     ].join("\n");
     expect(stripIncomplete(source)).toBe(":::input{id=name}\ndefault\n:::\n\n");
   });
+
+  it.each([":", "::", ":::"])(
+    "strips trailing incomplete colon prefix %j",
+    (prefix) => {
+      expect(stripIncomplete(`Intro\n\n${prefix}`)).toBe("Intro\n\n");
+    },
+  );
 });

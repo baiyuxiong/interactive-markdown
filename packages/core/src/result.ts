@@ -8,7 +8,8 @@ export function isFilled(block: ImdBlock, values: string[]): boolean {
   switch (block.type) {
     case "choice": {
       if (block.mode === "single") return values.length === 1;
-      return values.length >= 1;
+      if (block.required) return values.length >= 1;
+      return true;
     }
     case "input": {
       const filled = Boolean(values[0]?.trim());

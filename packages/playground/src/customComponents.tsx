@@ -10,10 +10,10 @@ type InputBlock = Extract<ImdBlock, { type: "input" }>;
 type SwitchBlock = Extract<ImdBlock, { type: "switch" }>;
 type ActionsBlock = Extract<ImdBlock, { type: "actions" }>;
 
-type Labels = { confirm: string; submit: string };
+type Labels = Record<string, never>;
 
-/** Demo: hint always rendered under the control (unlike default UI). */
-export function createCustomComponents(labels: Labels): ImdComponents {
+/** Demo: custom chrome; same label → control → hint order as defaults. */
+export function createCustomComponents(_labels?: Labels): ImdComponents {
   function Choice({
     block,
     disabled,
@@ -27,13 +27,17 @@ export function createCustomComponents(labels: Labels): ImdComponents {
 
     const update = (next: string[]) => {
       if (controlled === undefined) setLocal(next);
-      if (block.mode === "single" && submitOnSelect && isFilled(block, next)) {
+      if (block.mode === "multiple") {
         onSubmit(next);
+        return;
       }
+      if (!submitOnSelect || !isFilled(block, next)) return;
+      onSubmit(next);
     };
 
     return (
       <div className="imd-custom choice" data-imd="choice">
+        {block.label ? <div className="imd-label">{block.label}</div> : null}
         <div className="imd-custom-title">
           {block.mode === "multiple" ? "Multi" : "Single"}
         </div>
@@ -64,15 +68,6 @@ export function createCustomComponents(labels: Labels): ImdComponents {
             );
           })}
         </div>
-        {block.mode === "multiple" ? (
-          <button
-            type="button"
-            disabled={disabled || !isFilled(block, selected)}
-            onClick={() => onSubmit(selected)}
-          >
-            {labels.confirm}
-          </button>
-        ) : null}
         {block.hint ? <p className="imd-hint below">{block.hint}</p> : null}
       </div>
     );
@@ -83,6 +78,7 @@ export function createCustomComponents(labels: Labels): ImdComponents {
     disabled,
     values: controlled,
     onSubmit,
+    incomplete,
   }: BlockComponentProps<InputBlock>) {
     const id = useId();
     const [local, setLocal] = useState(
@@ -93,7 +89,7 @@ export function createCustomComponents(labels: Labels): ImdComponents {
     return (
       <div className="imd-custom input" data-imd="input">
         {block.label ? (
-          <label htmlFor={id}>
+          <label className="imd-label" htmlFor={id}>
             {block.label}
             {block.required ? <span aria-hidden="true"> *</span> : null}
           </label>
@@ -106,16 +102,13 @@ export function createCustomComponents(labels: Labels): ImdComponents {
           disabled={disabled}
           aria-required={block.required || undefined}
           onChange={(e) => {
-            if (controlled === undefined) setLocal(e.target.value);
+            const next = e.target.value;
+            if (controlled === undefined) setLocal(next);
+            if (disabled || incomplete) return;
+            if (!isFilled(block, [next])) return;
+            onSubmit([next]);
           }}
         />
-        <button
-          type="button"
-          disabled={disabled || !isFilled(block, [value])}
-          onClick={() => onSubmit([value])}
-        >
-          {labels.submit}
-        </button>
         {block.hint ? <p className="imd-hint below">{block.hint}</p> : null}
       </div>
     );
@@ -127,6 +120,7 @@ export function createCustomComponents(labels: Labels): ImdComponents {
     values: controlled,
     onSubmit,
   }: BlockComponentProps<SwitchBlock>) {
+    const id = useId();
     const initial = controlled?.[0] ?? block.default ?? "off";
     const [local, setLocal] = useState(initial);
     const value = controlled?.[0] ?? local;
@@ -134,13 +128,19 @@ export function createCustomComponents(labels: Labels): ImdComponents {
 
     return (
       <div className="imd-custom switch" data-imd="switch">
-        <label className="imd-custom-switch-row">
-          <span>{block.label ?? block.id}</span>
+        <div className="imd-switch-row">
+          {block.label ? (
+            <label className="imd-label" htmlFor={id}>
+              {block.label}
+            </label>
+          ) : null}
           <input
+            id={id}
             type="checkbox"
             role="switch"
             checked={on}
             disabled={disabled}
+            aria-label={block.label ? undefined : block.id}
             onChange={() => {
               const next = on ? "off" : "on";
               if (controlled === undefined) setLocal(next);
@@ -148,7 +148,7 @@ export function createCustomComponents(labels: Labels): ImdComponents {
               if (!block.required || isFilled(block, values)) onSubmit(values);
             }}
           />
-        </label>
+        </div>
         {block.hint ? <p className="imd-hint below">{block.hint}</p> : null}
       </div>
     );
@@ -161,6 +161,7 @@ export function createCustomComponents(labels: Labels): ImdComponents {
   }: BlockComponentProps<ActionsBlock>) {
     return (
       <div className="imd-custom actions" data-imd="actions">
+        {block.label ? <div className="imd-label">{block.label}</div> : null}
         <div className="imd-custom-actions-row">
           {block.items.map((item) => (
             <button

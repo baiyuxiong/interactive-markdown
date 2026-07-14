@@ -10,6 +10,7 @@ export function pendingToBlock(pending: ImdPendingBlock): ImdBlock {
         id: pending.id ?? "",
         mode: pending.mode ?? "single",
         options: pending.options ?? [],
+        ...(pending.label ? { label: pending.label } : {}),
         ...(pending.required ? { required: true } : {}),
         ...(pending.hint ? { hint: pending.hint } : {}),
       };
@@ -36,6 +37,7 @@ export function pendingToBlock(pending: ImdPendingBlock): ImdBlock {
       return {
         type: "actions",
         items: pending.items ?? [],
+        ...(pending.label ? { label: pending.label } : {}),
         ...(pending.hint ? { hint: pending.hint } : {}),
       };
   }

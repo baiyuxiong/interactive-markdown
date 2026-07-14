@@ -52,6 +52,19 @@ describe("isFilled", () => {
   it("treats non-required switch off as filled", () => {
     expect(isFilled({ ...sw, required: false }, ["off"])).toBe(true);
   });
+
+  it("treats empty multiple as unfilled only when required", () => {
+    const optional: ImdBlock = {
+      type: "choice",
+      id: "features",
+      mode: "multiple",
+      options: [{ value: "a", label: "A" }],
+    };
+    const requiredMulti: ImdBlock = { ...optional, required: true };
+    expect(isFilled(optional, [])).toBe(true);
+    expect(isFilled(requiredMulti, [])).toBe(false);
+    expect(isFilled(requiredMulti, ["a"])).toBe(true);
+  });
 });
 
 describe("buildInteractionResult", () => {

@@ -11,6 +11,7 @@ function serializeBlock(block: ImdBlock): string {
     case "choice": {
       const attrs = attrsToString({
         id: block.id,
+        label: block.label,
         mode: block.mode,
         required: block.required,
         hint: block.hint,
@@ -40,7 +41,7 @@ function serializeBlock(block: ImdBlock): string {
       return `:::switch${attrs}\n:::`;
     }
     case "actions": {
-      const attrs = attrsToString({ hint: block.hint });
+      const attrs = attrsToString({ label: block.label, hint: block.hint });
       const body = block.items.map((i) => `- ${i.actionId} | ${i.label}`).join("\n");
       return `:::actions${attrs}\n${body}\n:::`;
     }

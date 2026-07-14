@@ -10,6 +10,8 @@
 
 Stream-friendly Interactive Markdown: embed `choice` / `input` / `switch` / `actions` in Markdown for AI chat and forms.
 
+![Demo](./docs/assets/demo.gif)
+
 ### Packages
 
 | Package | Description |
@@ -32,7 +34,7 @@ import { InteractiveMarkdown } from "@interactive-markdown/react";
   streaming={isStreaming}
   interactive={{
     onChoice: (result) => {
-      // result.values + result.block — compose your own message content
+      // result.values + result.block — compose your own message content， ref docs/spec.md
     },
     onInput: (result) => {},
     onSwitch: (result) => {},
@@ -74,22 +76,24 @@ Optional `renderPending={(pending) => ...}` overrides the pending region.
 ### Syntax
 
 ```markdown
-:::choice{id=login mode=single required hint="说明"}
-- phone | 手机号登录
-- oauth | 第三方账号登录
+:::choice{id=login label="Which login method?" mode=single required hint="hint"}
+- phone | Phone login
+- oauth | Third-party login
 :::
 
-:::input{id=name label=产品名称 placeholder=示例 required}
+:::input{id=name label="Product name" placeholder=Example required}
 :::
 
-:::switch{id=notify label=消息通知 default=off}
+:::switch{id=notify label="Notifications" default=off}
 :::
 
 :::actions
-- submit | 确认并继续
-- skip | 暂时跳过
+- submit | Confirm & continue
+- skip | Skip for now
 :::
 ```
+
+Default UI order: **label → control → hint**. Quote attribute values that contain spaces.
 
 ### Development
 
@@ -122,6 +126,8 @@ MIT
 
 面向流式场景的交互式 Markdown：在 Markdown 中嵌入 `choice` / `input` / `switch` / `actions`，适用于 AI 对话与表单。
 
+![演示](./docs/assets/demo.gif)
+
 ### 包结构
 
 | 包 | 说明 |
@@ -144,7 +150,7 @@ import { InteractiveMarkdown } from "@interactive-markdown/react";
   streaming={isStreaming}
   interactive={{
     onChoice: (result) => {
-      // result.values + result.block — 自行组装消息内容
+      // result.values + result.block — 自行组装消息内容，详细见：docs/spec.md
     },
     onInput: (result) => {},
     onSwitch: (result) => {},
@@ -186,15 +192,15 @@ import { InteractiveMarkdown } from "@interactive-markdown/react";
 ### 语法
 
 ```markdown
-:::choice{id=login mode=single required hint="说明"}
+:::choice{id=login label="你更倾向哪种登录方式？" mode=single required hint="说明"}
 - phone | 手机号登录
 - oauth | 第三方账号登录
 :::
 
-:::input{id=name label=产品名称 placeholder=示例 required}
+:::input{id=name label="产品名称" placeholder=示例 required}
 :::
 
-:::switch{id=notify label=消息通知 default=off}
+:::switch{id=notify label="消息通知" default=off}
 :::
 
 :::actions
@@ -202,6 +208,8 @@ import { InteractiveMarkdown } from "@interactive-markdown/react";
 - skip | 暂时跳过
 :::
 ```
+
+默认 UI 顺序：**label → 控件 → hint**。属性值含空格时请加引号。
 
 ### 开发
 

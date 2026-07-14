@@ -22,12 +22,16 @@ export function DefaultChoice({
   const [local, setLocal] = useState<string[]>(controlled ?? []);
   const selected = controlled ?? local;
   const groupName = useId();
+  const labelId = useId();
 
   const update = (next: string[]) => {
     if (controlled === undefined) setLocal(next);
-    if (block.mode === "single" && submitOnSelect && isFilled(block, next)) {
+    if (block.mode === "multiple") {
       onSubmit(next);
+      return;
     }
+    if (!submitOnSelect || !isFilled(block, next)) return;
+    onSubmit(next);
   };
 
   return (
@@ -37,8 +41,15 @@ export function DefaultChoice({
       data-imd="choice"
       data-imd-pending={incomplete ? "" : undefined}
     >
-      {block.hint ? <legend className="imd-hint">{block.hint}</legend> : null}
-      <div role={block.mode === "single" ? "radiogroup" : "group"}>
+      {block.label ? (
+        <div className="imd-label" id={labelId}>
+          {block.label}
+        </div>
+      ) : null}
+      <div
+        role={block.mode === "single" ? "radiogroup" : "group"}
+        aria-labelledby={block.label ? labelId : undefined}
+      >
         {block.options.map((opt) => {
           const checked = selected.includes(opt.value);
           if (block.mode === "single") {
@@ -75,15 +86,7 @@ export function DefaultChoice({
           );
         })}
       </div>
-      {block.mode === "multiple" ? (
-        <button
-          type="button"
-          disabled={disabled || !isFilled(block, selected)}
-          onClick={() => onSubmit(selected)}
-        >
-          Confirm
-        </button>
-      ) : null}
+      {block.hint ? <p className="imd-hint">{block.hint}</p> : null}
     </fieldset>
   );
 }
@@ -113,12 +116,11 @@ export function DefaultInput({
       data-imd-pending={incomplete ? "" : undefined}
     >
       {block.label ? (
-        <label htmlFor={id}>
+        <label className="imd-label" htmlFor={id}>
           {block.label}
           {block.required ? <span aria-hidden="true"> *</span> : null}
         </label>
       ) : null}
-      {block.hint ? <p className="imd-hint">{block.hint}</p> : null}
       <input
         id={id}
         type="text"
@@ -128,16 +130,14 @@ export function DefaultInput({
         aria-required={block.required || undefined}
         aria-label={block.label ? undefined : block.id}
         onChange={(e) => {
-          if (controlled === undefined) setLocal(e.target.value);
+          const next = e.target.value;
+          if (controlled === undefined) setLocal(next);
+          if (disabled || incomplete) return;
+          if (!isFilled(block, [next])) return;
+          onSubmit([next]);
         }}
       />
-      <button
-        type="button"
-        disabled={disabled || !isFilled(block, [value])}
-        onClick={() => onSubmit([value])}
-      >
-        Submit
-      </button>
+      {block.hint ? <p className="imd-hint">{block.hint}</p> : null}
     </div>
   );
 }
@@ -149,6 +149,7 @@ export function DefaultSwitch({
   onSubmit,
   incomplete,
 }: BlockComponentProps<SwitchBlock>) {
+  const id = useId();
   const initial = controlled?.[0] ?? block.default ?? "off";
   const [local, setLocal] = useState(initial);
   const value = controlled?.[0] ?? local;
@@ -160,9 +161,14 @@ export function DefaultSwitch({
       data-imd="switch"
       data-imd-pending={incomplete ? "" : undefined}
     >
-      {block.hint ? <p className="imd-hint">{block.hint}</p> : null}
-      <label>
+      <div className="imd-switch-row">
+        {block.label ? (
+          <label className="imd-label" htmlFor={id}>
+            {block.label}
+          </label>
+        ) : null}
         <input
+          id={id}
           type="checkbox"
           role="switch"
           checked={on}
@@ -177,8 +183,8 @@ export function DefaultSwitch({
             }
           }}
         />
-        {block.label ?? block.id}
-      </label>
+      </div>
+      {block.hint ? <p className="imd-hint">{block.hint}</p> : null}
     </div>
   );
 }
@@ -195,7 +201,7 @@ export function DefaultActions({
       data-imd="actions"
       data-imd-pending={incomplete ? "" : undefined}
     >
-      {block.hint ? <p className="imd-hint">{block.hint}</p> : null}
+      {block.label ? <div className="imd-label">{block.label}</div> : null}
       {block.items.map((item) => (
         <button
           key={item.actionId}
@@ -206,6 +212,7 @@ export function DefaultActions({
           {item.label}
         </button>
       ))}
+      {block.hint ? <p className="imd-hint">{block.hint}</p> : null}
     </div>
   );
 }

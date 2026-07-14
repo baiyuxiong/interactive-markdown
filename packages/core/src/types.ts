@@ -6,6 +6,7 @@ export type ImdBlock =
   | {
       type: "choice";
       id: string;
+      label?: string;
       mode: "single" | "multiple";
       options: ImdOption[];
       required?: boolean;
@@ -31,6 +32,7 @@ export type ImdBlock =
   | {
       type: "actions";
       items: ImdActionItem[];
+      label?: string;
       hint?: string;
     };
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   InteractiveMarkdown,
   type ImdAnswers,
@@ -81,10 +81,7 @@ export function App() {
   );
   const [log, setLog] = useState<ImdInteractionResult[]>([]);
   const [answers, setAnswers] = useState<ImdAnswers>({});
-  const customComponents = useMemo(
-    () => createCustomComponents({ confirm: t.confirm, submit: t.submit }),
-    [t.confirm, t.submit],
-  );
+  const customComponents = useMemo(() => createCustomComponents(), []);
 
   const switchLocale = (next: Locale) => {
     if (next === locale) return;
@@ -234,12 +231,6 @@ export function App() {
                 view === "custom" ? "preview-body custom-body" : "preview-body"
               }
               key={`${runId}-${locale}-${view}`}
-              style={
-                {
-                  ["--imd-label-confirm" as string]: JSON.stringify(t.confirm),
-                  ["--imd-label-submit" as string]: JSON.stringify(t.submit),
-                } as CSSProperties
-              }
             >
               {view === "custom" ? (
                 <p className="custom-note">{t.customNote}</p>

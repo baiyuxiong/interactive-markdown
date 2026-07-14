@@ -4,24 +4,20 @@ import { serialize } from "./serialize.js";
 import { validate } from "./validate.js";
 
 const sample = [
-  "你更倾向哪种登录方式？",
+  "你好，我们先确认几个偏好。",
   "",
-  ':::choice{id=login mode=single required hint="后续可在设置中更换"}',
+  ':::choice{id=login label="你更倾向哪种登录方式？" mode=single required hint="后续可在设置中更换"}',
   "- phone | 手机号登录",
   "- oauth | 第三方账号登录",
   ":::",
   "",
-  "产品暂定叫什么名字？",
-  "",
-  ":::input{id=name label=产品名称 placeholder=例如：智能审批助手 required hint=\"可稍后修改\"}",
+  ':::input{id=name label="产品暂定叫什么名字？" placeholder=例如：智能审批助手 required hint="可稍后修改"}',
   ":::",
   "",
-  "是否开启消息通知？",
-  "",
-  ":::switch{id=notify label=消息通知 default=off hint=\"可随时关闭\"}",
+  ':::switch{id=notify label="是否开启消息通知？" default=off hint="可随时关闭"}',
   ":::",
   "",
-  ':::actions{hint="确认后将进入下一步"}',
+  ':::actions{label="请选择下一步" hint="确认后将进入下一步"}',
   "- submit | 确认并继续",
   "- skip | 暂时跳过",
   ":::",
@@ -32,10 +28,11 @@ describe("parse", () => {
     const doc = parse(sample);
     expect(doc.source).toBe(sample);
     expect(doc.blocks).toEqual([
-      { type: "markdown", text: "你更倾向哪种登录方式？\n\n" },
+      { type: "markdown", text: "你好，我们先确认几个偏好。\n\n" },
       {
         type: "choice",
         id: "login",
+        label: "你更倾向哪种登录方式？",
         mode: "single",
         required: true,
         hint: "后续可在设置中更换",
@@ -44,32 +41,40 @@ describe("parse", () => {
           { value: "oauth", label: "第三方账号登录" },
         ],
       },
-      { type: "markdown", text: "\n\n产品暂定叫什么名字？\n\n" },
+      { type: "markdown", text: "\n\n" },
       {
         type: "input",
         id: "name",
-        label: "产品名称",
+        label: "产品暂定叫什么名字？",
         placeholder: "例如：智能审批助手",
         required: true,
         hint: "可稍后修改",
       },
-      { type: "markdown", text: "\n\n是否开启消息通知？\n\n" },
+      { type: "markdown", text: "\n\n" },
       {
         type: "switch",
         id: "notify",
-        label: "消息通知",
+        label: "是否开启消息通知？",
         default: "off",
         hint: "可随时关闭",
       },
       { type: "markdown", text: "\n\n" },
       {
         type: "actions",
+        label: "请选择下一步",
         hint: "确认后将进入下一步",
         items: [
           { actionId: "submit", label: "确认并继续" },
           { actionId: "skip", label: "暂时跳过" },
         ],
       },
+    ]);
+  });
+
+  it("parses escaped quotes inside attribute values", () => {
+    const doc = parse(':::input{id=n label="说\\"你好\\""}\n:::');
+    expect(doc.blocks).toEqual([
+      { type: "input", id: "n", label: '说"你好"' },
     ]);
   });
 

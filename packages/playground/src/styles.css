@@ -296,15 +296,95 @@ button {
 }
 
 .preview-body .imd-hint {
-  margin: 0 0 0.5rem;
+  margin: 0.5rem 0 0;
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.preview-body .imd-label {
+  display: block;
+  margin: 0 0 0.45rem;
+  font-weight: 600;
+}
+
+.preview-body .imd-choice {
+  min-inline-size: 0;
+}
+
+.preview-body .imd-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.preview-body .imd-switch-row .imd-label {
+  margin: 0;
+  flex: 0 1 auto;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.preview-body .imd-switch-row input[role="switch"] {
+  appearance: none;
+  -webkit-appearance: none;
+  flex-shrink: 0;
+  margin: 0;
+  width: 2.6rem;
+  height: 1.45rem;
+  border: 1px solid rgba(19, 34, 28, 0.2);
+  border-radius: 999px;
+  background: rgba(19, 34, 28, 0.12);
+  position: relative;
+  cursor: pointer;
+  vertical-align: middle;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.preview-body .imd-switch-row input[role="switch"]::before {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(19, 34, 28, 0.25);
+  transition: transform 0.15s ease;
+}
+
+.preview-body .imd-switch-row input[role="switch"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.preview-body .imd-switch-row input[role="switch"]:checked::before {
+  transform: translateX(1.1rem);
+}
+
+.preview-body .imd-switch-row input[role="switch"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.preview-body .imd-switch-row input[role="switch"]:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.preview-body .imd-custom.switch .imd-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.65rem;
 }
 
 .preview-body .imd-input input[type="text"] {
   display: block;
   width: 100%;
-  margin: 0.35rem 0 0.6rem;
+  margin: 0;
   padding: 0.55rem 0.65rem;
   border: 1px solid rgba(19, 34, 28, 0.18);
   border-radius: 8px;
@@ -318,31 +398,6 @@ button {
   border-radius: 8px;
   border: 1px solid rgba(19, 34, 28, 0.16);
   background: #fff;
-}
-
-.preview-body .imd-choice > button,
-.preview-body .imd-input > button {
-  position: relative;
-  color: transparent;
-}
-
-.preview-body .imd-choice > button::after,
-.preview-body .imd-input > button::after {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  color: var(--text);
-  font: inherit;
-  font-weight: 500;
-}
-
-.preview-body .imd-choice > button::after {
-  content: var(--imd-label-confirm);
-}
-
-.preview-body .imd-input > button::after {
-  content: var(--imd-label-submit);
 }
 
 .preview-body button:disabled {
@@ -366,6 +421,22 @@ button {
   border-radius: 12px;
   border: 1px dashed rgba(31, 107, 84, 0.45);
   background: rgba(31, 107, 84, 0.06);
+}
+
+.imd-custom.input > label {
+  display: block;
+}
+
+.imd-custom.input input[type="text"] {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0.35rem 0 0;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgba(19, 34, 28, 0.18);
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
 }
 
 .imd-custom-title {

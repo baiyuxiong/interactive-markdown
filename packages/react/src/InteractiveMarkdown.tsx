@@ -96,14 +96,22 @@ export function InteractiveMarkdown({
     } else if (incomplete === "placeholder") {
       pendingNode = <DefaultPendingPlaceholder pending={pending} />;
     } else if (incomplete === "progressive") {
-      pendingNode = renderProgressivePending({
-        pending,
-        Choice,
-        Input,
-        Switch,
-        Actions,
-        meta,
-      });
+      const hasRows =
+        pending.type === "choice"
+          ? (pending.options?.length ?? 0) > 0
+          : pending.type === "actions"
+            ? (pending.items?.length ?? 0) > 0
+            : true;
+      pendingNode = hasRows
+        ? renderProgressivePending({
+            pending,
+            Choice,
+            Input,
+            Switch,
+            Actions,
+            meta,
+          })
+        : null;
     }
     // hide → null
   }

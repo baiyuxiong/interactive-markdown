@@ -86,6 +86,18 @@ function scan(source: string): ScanResult {
 
     if (closeLine < 0) {
       const raw = source.slice(openStart);
+      // While the opening fence is still the last line and has no trailing
+      // newline, more chars (e.g. `{attrs}`) may still arrive — defer pending
+      // so UIs don't flash empty widgets that then vanish.
+      const openLineCommitted =
+        i < lines.length - 1 || source.endsWith("\n");
+      if (!openLineCommitted) {
+        return {
+          blocks,
+          pending: null,
+          excludedRaw: raw,
+        };
+      }
       const bodyLines = lines.slice(i + 1);
       const pending = isKnownPendingName(open.name)
         ? toPending(open.name, open.attrText, bodyLines, raw)
@@ -145,6 +157,7 @@ function toBlock(d: RawDirective): ImdBlock | null {
       return {
         type: "choice",
         id: str(d.attrs.id) ?? "",
+        label: str(d.attrs.label),
         mode: str(d.attrs.mode) === "multiple" ? "multiple" : "single",
         options: parseOptions(d.body),
         ...boolHint(d.attrs),
@@ -174,6 +187,7 @@ function toBlock(d: RawDirective): ImdBlock | null {
       return {
         type: "actions",
         items: parseActions(d.body),
+        label: str(d.attrs.label),
         hint: str(d.attrs.hint),
       };
     default:
@@ -200,6 +214,7 @@ function toPending(
     case "choice":
       return {
         type: "choice",
+        label: str(attrs.label),
         mode: str(attrs.mode) === "multiple" ? "multiple" : "single",
         options: parseOptions(body),
         ...base,
@@ -227,6 +242,7 @@ function toPending(
       return {
         type: "actions",
         items: parseActions(body),
+        label: str(attrs.label),
         hint: str(attrs.hint),
         raw,
       };
@@ -271,9 +287,11 @@ function matchOpenFence(line: string): { name: string; attrText: string } | null
   return { name: m[1]!, attrText: m[2] ?? "" };
 }
 
-/** Like strip.ts open detection: starts with :::name but may have unclosed attrs. */
+/** Streaming fence hint: bare :/::/::: or :::name… before the open is complete. */
 function looksLikeOpenStart(line: string): boolean {
-  return /^:::[a-zA-Z][\w-]*/.test(line.trimEnd());
+  const t = line.trimEnd();
+  if (t === ":" || t === "::" || t === ":::") return true;
+  return /^:::[a-zA-Z][\w-]*/.test(t);
 }
 
 function isCloseFence(line: string): boolean {
@@ -298,9 +316,18 @@ function parseAttrs(raw: string): Attrs {
       if (raw[i] === '"' || raw[i] === "'") {
         const q = raw[i]!;
         i++;
-        const start = i;
-        while (i < raw.length && raw[i] !== q) i++;
-        attrs[key] = raw.slice(start, i);
+        let value = "";
+        while (i < raw.length) {
+          if (raw[i] === "\\" && i + 1 < raw.length) {
+            value += raw[i + 1]!;
+            i += 2;
+            continue;
+          }
+          if (raw[i] === q) break;
+          value += raw[i]!;
+          i++;
+        }
+        attrs[key] = value;
         if (raw[i] === q) i++;
       } else {
         const start = i;

@@ -44,21 +44,17 @@ interactive-markdown/          # GitHub 仓库名示例
 ### 3.2 交互块
 
 ```markdown
-你更倾向哪种登录方式？
+你好，我们先确认几个偏好。
 
-:::choice{id=login mode=single required hint="后续可在设置中更换"}
+:::choice{id=login label="你更倾向哪种登录方式？" mode=single required hint="后续可在设置中更换"}
 - phone | 手机号登录
 - oauth | 第三方账号登录
 :::
 
-产品暂定叫什么名字？
-
-:::input{id=name label=产品名称 placeholder=例如：智能审批助手 required hint="可稍后修改"}
+:::input{id=name label="产品暂定叫什么名字？" placeholder=例如：智能审批助手 required hint="可稍后修改"}
 :::
 
-是否开启消息通知？
-
-:::switch{id=notify label=消息通知 default=off hint="可随时关闭"}
+:::switch{id=notify label="是否开启消息通知？" default=off hint="可随时关闭"}
 :::
 
 :::actions{hint="确认后将进入下一步"}
@@ -67,20 +63,25 @@ interactive-markdown/          # GitHub 仓库名示例
 :::
 ```
 
-正文叙述可用普通 Markdown；控件旁的短说明用可选属性 `hint`（含空格需加引号）。
+题干用块属性 `label`（与控件一体，流式时同显隐）；长叙述用普通 Markdown；旁注用可选 `hint`。
+
+**属性引号规则**：值不含空格时可省略引号（如 `label=产品名称`）；含空格 / `"` / `'` / `{}` 时须加引号。引号内同号可用 `\"` / `\'` 转义，也可用相反引号避免转义（`label='他说"好"'`）。
+
+默认 UI 顺序：**label → 表单控件 → hint**。`switch` 为横排例外：同一行 label 与开关**紧邻**（不贴右缘），`hint` 仍在下方。
 
 ### 3.3 块类型
 
 | 类型 | 属性 | 内容 |
 |---|---|---|
-| `choice` | `id`, `mode=single\|multiple`, `required?`, `hint?` | `- value \| label` 行 |
+| `choice` | `id`, `label?`, `mode=single\|multiple`, `required?`, `hint?` | `- value \| label` 行 |
 | `input` | `id`, `label?`, `placeholder?`, `required?`, `hint?` | 空或默认值 |
 | `switch` | `id`, `label?`, `default=on\|off`, `required?`, `hint?` | 空（无列表体） |
-| `actions` | `hint?` | `- actionId \| label` 行 |
+| `actions` | `label?`, `hint?` | `- actionId \| label` 行 |
 
 - `switch` 的取值固定为 `"on"` / `"off"`（写入 `values[0]`）；省略 `default` 时为 `off`  
 - `switch` 的 `required` 表示**必须开启**（`values` 须为 `["on"]`），用于同意条款等场景  
-- `choice` / `input` 的 `required`：未满足时默认 UI **不触发**回调（choice 至少选 1 项；input 经 trim 后非空）  
+- `choice` / `input` 的 `required`：供 `isFilled` / 业务校验（choice 至少选 1 项；input 经 trim 后非空）。**多选**勾选变化始终触发 `onChoice`（含空数组）；**单选**点选后触发；**input** 在 `required` 未满足时不触发  
+- `input`：**内容变化时**直接触发 `onInput`（无提交按钮）；`required` 未满足时不触发  
 - `input` 容器体内若有文本，视为**默认值**；否则为空  
 - `actions` 块本身无 `id`；点击某按钮时 `result.blockId` = 该行的 `actionId`  
 - 其它控件类型（日期、上传、评分等）**暂不支持**
@@ -97,10 +98,10 @@ interactive-markdown/          # GitHub 仓库名示例
 ```ts
 type ImdBlock =
   | { type: "markdown"; text: string }
-  | { type: "choice"; id: string; mode: "single" | "multiple"; options: { value: string; label: string }[]; required?: boolean; hint?: string }
+  | { type: "choice"; id: string; label?: string; mode: "single" | "multiple"; options: { value: string; label: string }[]; required?: boolean; hint?: string }
   | { type: "input"; id: string; label?: string; placeholder?: string; required?: boolean; hint?: string; defaultValue?: string }
   | { type: "switch"; id: string; label?: string; default?: "on" | "off"; required?: boolean; hint?: string }
-  | { type: "actions"; items: { actionId: string; label: string }[]; hint?: string };
+  | { type: "actions"; items: { actionId: string; label: string }[]; label?: string; hint?: string };
 
 type ImdDocument = {
   source: string;       // 原始 MD
@@ -343,8 +344,8 @@ function submitChoice(blockId: string, values: string[]) {
 | 场景 | 行为 |
 |---|---|
 | 单选 | 点选 → 触发 `onChoice`（可配置 `submitOnSelect`） |
-| 多选 | 勾选 → 点「确认」→ 触发 `onChoice` |
-| 填写 | 点「提交」→ 触发 `onInput` |
+| 多选 | 勾选变化 → 触发 `onChoice`（无确认按钮；可清空为 `[]`；`required` 仅供校验） |
+| 填写 | 内容变化 → 触发 `onInput`（无提交按钮；`required` 未满足时不触发） |
 | 开关 | 切换 → 触发 `onSwitch`（`values` 为 `["on"]` / `["off"]`） |
 | `disabled: true` | 所有块只读，展示历史答案（由业务传入 `answers`） |
 
@@ -391,6 +392,8 @@ sequenceDiagram
 规则：
 
 - **未闭合 `:::`** → `parseSafe` 得到 `pending`；由 `incomplete` 决定如何展示（见下）  
+- **流式形成中的行首 `:` / `::` / `:::`** → 同样视为可能的开标签前缀，**不进入可见 Markdown**（避免冒号闪一下再消失）；`streaming=false` / `parse` 仍会折回为正文  
+- **开标签行未提交**（仍是最后一行且 source 不以 `\n` 结尾）→ 不出 `pending`（避免 `:::choice` 先出空控件，再被 `:::choice{` 打回隐藏）  
 - **闭合但校验失败** → 降级为普通 Markdown 文本  
 - **交互块** → 仅已完整闭合的块可操作；pending 一律 `disabled`，不触发回调  
 
@@ -400,7 +403,7 @@ sequenceDiagram
 |---|---|
 | `hide`（默认） | 不渲染 pending（兼容现有 `stripIncomplete` 体验） |
 | `placeholder` | 按类型渲染骨架，不展示半解析真实文案/选项 |
-| `progressive` | 用已稳定解析的字段渐进渲染控件；选项/操作行凑齐一行再追加 |
+| `progressive` | 用已稳定解析的字段渐进渲染控件；选项/操作行凑齐一行再追加；**开标签行未提交前、以及 choice/actions 尚无完整选项行前不渲染** |
 
 可选 `renderPending?.(pending)` 覆盖默认 pending UI。设计细节见 `docs/superpowers/specs/2026-07-14-streaming-incomplete-modes-design.md`。
 
@@ -492,7 +495,7 @@ source
 | 怎么给 AI 用？ | 业务用 `values` + `block`（label）自行拼 `content` |
 | 怎么给程序用？ | 用 `result.blockId` + `result.values` + `result.kind` |
 | 怎么发给后端？ | 业务调用 `toReplyPayload(result)` 或自行组包 |
-| 提示文案怎么写？ | 短说明用块属性 `hint?`；长叙述用普通 Markdown。不设独立 `:::hint` 块 |
+| 提示文案怎么写？ | 题干用块属性 `label?`；旁注用 `hint?`；长叙述用普通 Markdown。不设独立 `:::hint` 块 |
 | 支持哪些控件？ | `choice` / `input` / `switch` / `actions`；其它类型暂不支持 |
 | 库管不管发送？ | **不管**，只负责解析、渲染、产出结构化结果 |
 

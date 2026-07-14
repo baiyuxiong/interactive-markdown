@@ -43,6 +43,7 @@ describe("parseSafe", () => {
       ":::",
       "",
       ":::switch{id=notify label=Notify}",
+      "",
     ].join("\n");
     const result = parseSafe(source);
     expect(result.document.blocks).toEqual([
@@ -98,5 +99,61 @@ describe("parseSafe", () => {
         text: ":::choice{id=login mode=single}\n- phone | Phone",
       },
     ]);
+  });
+
+  it.each([":", "::", ":::"])(
+    "excludes trailing incomplete colon prefix %j so streaming does not flash fence chars",
+    (prefix) => {
+      const source = `Hi\n\n${prefix}`;
+      const result = parseSafe(source);
+      expect(result.pending).toBeNull();
+      expect(result.document.blocks).toEqual([
+        { type: "markdown", text: "Hi\n\n" },
+      ]);
+      expect(parse(source).blocks).toEqual([
+        { type: "markdown", text: "Hi\n\n" },
+        { type: "markdown", text: prefix },
+      ]);
+    },
+  );
+
+  it("does not treat a normal line ending with colon as a fence prefix", () => {
+    const source = "Hi\n\nNote:";
+    const result = parseSafe(source);
+    expect(result.pending).toBeNull();
+    expect(result.document.blocks).toEqual([
+      { type: "markdown", text: "Hi\n\nNote:" },
+    ]);
+  });
+
+  it("defers pending until the opening fence line is committed (newline)", () => {
+    // Same line still growing: name complete but attrs may arrive next — no pending yet.
+    const growing = parseSafe("Hi\n\n:::choice");
+    expect(growing.pending).toBeNull();
+    expect(growing.document.blocks).toEqual([
+      { type: "markdown", text: "Hi\n\n" },
+    ]);
+
+    // Mid-attrs still growing on the open line.
+    const midAttrs = parseSafe("Hi\n\n:::choice{id=");
+    expect(midAttrs.pending).toBeNull();
+
+    // Open line committed by newline — pending appears.
+    const committed = parseSafe("Hi\n\n:::choice\n");
+    expect(committed.pending).toMatchObject({ type: "choice" });
+
+    // Attrs complete on open line but no trailing newline yet — still deferred.
+    const attrsNoNl = parseSafe("Hi\n\n:::choice{id=login}");
+    expect(attrsNoNl.pending).toBeNull();
+
+    // Body started (open line no longer last) — pending with options.
+    const withBody = parseSafe(
+      "Hi\n\n:::choice{id=login}\n- phone | Phone",
+    );
+    expect(withBody.pending).toMatchObject({
+      type: "choice",
+      id: "login",
+      options: [{ value: "phone", label: "Phone" }],
+    });
   });
 });
