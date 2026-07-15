@@ -7,17 +7,22 @@ const sample = [
   "Hello",
   "",
   ":::choice{id=login mode=single required}",
+  "Pick login",
+  "",
   "- phone | Phone",
   "- oauth | OAuth",
   ":::",
   "",
-  ":::input{id=name label=Name required}",
+  ":::input{id=name required}",
+  "Name",
   ":::",
   "",
-  ":::switch{id=notify label=Notify default=off}",
+  ":::switch{id=notify default=off}",
+  "Notify",
   ":::",
   "",
-  ':::action{id=submit label="Submit"}',
+  ":::action{id=submit}",
+  "Submit",
   ":::",
 ].join("\n");
 
@@ -108,7 +113,7 @@ describe("InteractiveMarkdown", () => {
   it("emits onInput as the user types (no submit button)", async () => {
     const user = userEvent.setup();
     const onInput = vi.fn();
-    const src = ":::input{id=name label=Name required}\n:::";
+    const src = ":::input{id=name required}\nName\n:::";
     render(<InteractiveMarkdown source={src} interactive={{ onInput }} />);
     expect(
       screen.queryByRole("button", { name: "Submit" }),
@@ -125,7 +130,7 @@ describe("InteractiveMarkdown", () => {
   it("does not emit onInput for empty required input", async () => {
     const user = userEvent.setup();
     const onInput = vi.fn();
-    const src = ":::input{id=name label=Name required}\n:::";
+    const src = ":::input{id=name required}\nName\n:::";
     render(<InteractiveMarkdown source={src} interactive={{ onInput }} />);
     await user.type(screen.getByRole("textbox", { name: /Name/ }), " ");
     expect(onInput).not.toHaveBeenCalled();
@@ -136,10 +141,13 @@ describe("InteractiveMarkdown", () => {
     const onSwitch = vi.fn();
     const onAction = vi.fn();
     const src = [
-      ":::switch{id=notify label=Notify default=off}",
+      ":::switch{id=notify default=off}",
+      "Notify",
       ":::",
       "",
-      ':::action{id=skip label="Skip"}',
+      ":::action{id=skip}",
+      "Skip",
+      "",
       '{"reason":"later"}',
       ":::",
     ].join("\n");
@@ -170,7 +178,7 @@ describe("InteractiveMarkdown", () => {
     const onAction = vi.fn();
     render(
       <InteractiveMarkdown
-        source={":::action{id=broken label=Broken}\n{bad\n:::"}
+        source={":::action{id=broken}\nBroken\n\n{bad\n:::"}
         interactive={{ onAction }}
       />,
     );
@@ -293,7 +301,7 @@ describe("InteractiveMarkdown", () => {
     expect(onChoice).not.toHaveBeenCalled();
   });
 
-  it("progressive input updates defaultValue as body streams", () => {
+  it("progressive input updates label as body streams", () => {
     const { rerender } = render(
       <InteractiveMarkdown
         source={":::input{id=name}\nHe"}
@@ -301,7 +309,7 @@ describe("InteractiveMarkdown", () => {
         incomplete="progressive"
       />,
     );
-    expect(screen.getByRole("textbox")).toHaveValue("He");
+    expect(screen.getByRole("textbox", { name: "He" })).toBeInTheDocument();
     rerender(
       <InteractiveMarkdown
         source={":::input{id=name}\nHello"}
@@ -309,13 +317,13 @@ describe("InteractiveMarkdown", () => {
         incomplete="progressive"
       />,
     );
-    expect(screen.getByRole("textbox")).toHaveValue("Hello");
+    expect(screen.getByRole("textbox", { name: "Hello" })).toBeInTheDocument();
   });
 
   it("does not flash progressive action before id is stable", () => {
     const { rerender } = render(
       <InteractiveMarkdown
-        source={':::action{label="Go"}\n'}
+        source={":::action\nGo\n"}
         streaming
         incomplete="progressive"
       />,
@@ -324,7 +332,7 @@ describe("InteractiveMarkdown", () => {
 
     rerender(
       <InteractiveMarkdown
-        source={':::action{id=go label="Go"}\n'}
+        source={":::action{id=go}\nGo\n"}
         streaming
         incomplete="progressive"
       />,
@@ -335,7 +343,7 @@ describe("InteractiveMarkdown", () => {
   it("progressive action shows once id is stable without waiting for JSON", () => {
     const { rerender } = render(
       <InteractiveMarkdown
-        source={':::action{id=go label="Go"}\n'}
+        source={":::action{id=go}\nGo\n"}
         streaming
         incomplete="progressive"
       />,
@@ -343,7 +351,7 @@ describe("InteractiveMarkdown", () => {
     expect(screen.getByRole("button", { name: "Go" })).toBeDisabled();
     rerender(
       <InteractiveMarkdown
-        source={':::action{id=go label="Go"}\n{"a":1}\n'}
+        source={':::action{id=go}\nGo\n\n{"a":1}\n'}
         streaming
         incomplete="progressive"
       />,
@@ -382,17 +390,30 @@ describe("InteractiveMarkdown", () => {
 
   it("default UI order is label, control, then hint", () => {
     const src = [
-      ':::choice{id=c label="Pick one" mode=single hint="choice hint"}',
+      ":::choice{id=c mode=single}",
+      "Pick one",
+      "",
       "- a | A",
+      "",
+      "choice hint",
       ":::",
       "",
-      ':::input{id=n label="Name" hint="input hint"}',
+      ":::input{id=n}",
+      "Name",
+      "",
+      "input hint",
       ":::",
       "",
-      ':::switch{id=s label="Notify" default=off hint="switch hint"}',
+      ":::switch{id=s default=off}",
+      "Notify",
+      "",
+      "switch hint",
       ":::",
       "",
-      ':::action{id=go label="Go" hint="action hint"}',
+      ":::action{id=go}",
+      "Go",
+      "",
+      "action hint",
       ":::",
     ].join("\n");
     const { container } = render(<InteractiveMarkdown source={src} />);

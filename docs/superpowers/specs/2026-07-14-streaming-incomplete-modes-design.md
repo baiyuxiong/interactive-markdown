@@ -74,7 +74,7 @@ Shared rules:
 
 - Append a `choice` row only when the full `- value | label` line is parseable; hide partial lines.
 - For `action`, show the button after the opening fence is committed and `id` is stable; do not wait for JSON body (`data` / `dataError` apply only after close).
-- Fill attributes only after the opening fence line is fully available and attrs are stably parsed.
+- Fill machine attributes only after the opening fence line is fully available and attrs are stably parsed; body-derived `label` / `hint` may update progressively as text arrives.
 - Default components receive `incomplete: true` and a `data-imd-pending` (or equivalent) marker for styling.
 
 ### Placeholder details

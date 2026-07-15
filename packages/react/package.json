@@ -1,6 +1,6 @@
 {
   "name": "@interactive-markdown/react",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "React renderer for Interactive Markdown",
   "type": "module",
   "main": "./dist/index.js",
@@ -21,12 +21,24 @@
     "coverage": "vitest run --coverage"
   },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/baiyuxiong/interactive-markdown.git",
+    "directory": "packages/react"
+  },
+  "homepage": "https://github.com/baiyuxiong/interactive-markdown#readme",
+  "bugs": {
+    "url": "https://github.com/baiyuxiong/interactive-markdown/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0"
   },
   "dependencies": {
-    "@interactive-markdown/core": "0.1.0",
+    "@interactive-markdown/core": "0.2.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1"
   },

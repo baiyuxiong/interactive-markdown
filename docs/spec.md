@@ -43,50 +43,68 @@ interactive-markdown/          # GitHub 仓库名示例
 
 ### 3.2 交互块
 
-```markdown
+````markdown
 你好，我们先确认几个偏好。
 
-:::choice{id=login label="你更倾向哪种登录方式？" mode=single required hint="后续可在设置中更换"}
+:::choice{id=login mode=single required}
+你更倾向哪种登录方式？
+
 - phone | 手机号登录
 - oauth | 第三方账号登录
+
+后续可在设置中更换
 :::
 
-:::input{id=name label="产品暂定叫什么名字？" placeholder=例如：智能审批助手 required hint="可稍后修改"}
+:::input{id=name placeholder=例如：智能审批助手 required}
+产品暂定叫什么名字？
+
+可稍后修改
 :::
 
-:::switch{id=notify label="是否开启消息通知？" default=off hint="可随时关闭"}
+:::switch{id=notify default=off}
+是否开启消息通知？
+
+可随时关闭
 :::
 
-:::action{id=submit label="确认并继续" hint="确认后将进入下一步"}
+:::action{id=submit}
+确认并继续
+
+```json
 {"step":"next"}
-:::
-
-:::action{id=skip label="暂时跳过"}
-:::
 ```
 
-题干用块属性 `label`（与控件一体，流式时同显隐）；长叙述用普通 Markdown；旁注用可选 `hint`。
+确认后将进入下一步
+:::
 
-**属性引号规则**：值不含空格时可省略引号（如 `label=产品名称`）；含空格 / `"` / `'` / `{}` 时须加引号。引号内同号可用 `\"` / `\'` 转义，也可用相反引号避免转义（`label='他说"好"'`）。
+:::action{id=skip}
+暂时跳过
+:::
+````
 
-默认 UI 顺序：**label → 表单控件 → hint**。`switch` 为横排例外：同一行 label 与开关**紧邻**（不贴右缘），`hint` 仍在下方。`action` 为单按钮：文案取 `label ?? id`，`hint` 在按钮下方。
+属性只放 `id` / `mode` / `required` / `default` / `placeholder` 等机器字段；展示文案放正文。正文开头解析为 `label`，控件数据之后的正文解析为 `hint`，因此 `label` / `hint` 可随流式文本真实渐进展示。
+
+**属性引号规则**：值不含空格时可省略引号（如 `placeholder=产品名称`）；含空格 / `"` / `'` / `{}` 时须加引号。引号内同号可用 `\"` / `\'` 转义，也可用相反引号避免转义。
+
+默认 UI 顺序：**label → 表单控件 → hint**。`switch` 为横排例外：同一行 label 与开关**紧邻**（不贴右缘），`hint` 仍在下方。`action` 为单按钮：文案取正文 `label ?? id`，`hint` 在按钮下方。
 
 ### 3.3 块类型
 
 | 类型 | 属性 | 内容 |
 |---|---|---|
-| `choice` | `id`, `label?`, `mode=single\|multiple`, `required?`, `hint?` | `- value \| label` 行 |
-| `input` | `id`, `label?`, `placeholder?`, `required?`, `hint?` | 空或默认值 |
-| `switch` | `id`, `label?`, `default=on\|off`, `required?`, `hint?` | 空（无列表体） |
-| `action` | `id`, `label?`, `hint?` | 可选 JSON 正文 |
+| `choice` | `id`, `mode=single\|multiple`, `required?` | label 文本、`- value \| label` 行、hint 文本 |
+| `input` | `id`, `placeholder?`, `default?`, `required?` | label 文本、hint 文本 |
+| `switch` | `id`, `default=on\|off`, `required?` | label 文本、hint 文本 |
+| `action` | `id` | label 文本、可选 JSON、hint 文本 |
 
 - `switch` 的取值固定为 `"on"` / `"off"`（写入 `values[0]`）；省略 `default` 时为 `off`  
 - `switch` 的 `required` 表示**必须开启**（`values` 须为 `["on"]`），用于同意条款等场景  
 - `choice` / `input` 的 `required`：供 `isFilled` / 业务校验（choice 至少选 1 项；input 经 trim 后非空）。**多选**勾选变化始终触发 `onChoice`（含空数组）；**单选**点选后触发；**input** 在 `required` 未满足时不触发  
 - `input`：**内容变化时**直接触发 `onInput`（无提交按钮）；`required` 未满足时不触发  
-- `input` 容器体内若有文本，视为**默认值**；否则为空  
-- `action`：一块一按钮；点击产出 `kind: "action"`，`blockId` / `values[0]` = `id`。正文 trim 后非空则 `JSON.parse`：成功写入 `block.data`，失败写入 `block.dataError`（仍可点击）；空正文则两者皆无。业务从 `result.block.data` / `dataError` 取上下文  
-- `serialize` 对 `action`：有 `data`（含 `null`）则 `JSON.stringify` 写入正文；仅有 `dataError` 时写**空正文**（错误不写回 MD）。损坏 JSON 的完整回放依赖 `document.source`  
+- `input` 的默认值来自 `default` 属性；正文只负责 `label` / `hint`  
+- `choice` 正文分段：第一个选项行之前的文本为 `label`，连续 `- value | label` 行为 `options`，选项后的文本为 `hint`；若 option 行中间夹杂非 option 文本后又出现 option，整块无效并回退为 Markdown  
+- `action`：一块一按钮；点击产出 `kind: "action"`，`blockId` / `values[0]` = `id`。正文中第一段 JSON（推荐 fenced `json` 代码块）写入 `block.data`；JSON 非法写入 `block.dataError`（仍可点击）；无 JSON 时仅作为 label/hint 文案  
+- `serialize` 对 `action`：有 `data`（含 `null`）则以 fenced `json` 写入正文；仅有 `dataError` 时写**空正文**（错误不写回 MD）。损坏 JSON 的完整回放依赖 `document.source`  
 - 其它控件类型（日期、上传、评分等）**暂不支持**
 - 流式策略：`parse` + `stripIncomplete` + `parseSafe`；React 通过 `incomplete` 选择 hide / placeholder / progressive
 
@@ -503,7 +521,7 @@ source
 | 怎么给 AI 用？ | 业务用 `values` + `block`（label）自行拼 `content` |
 | 怎么给程序用？ | 用 `result.blockId` + `result.values` + `result.kind` |
 | 怎么发给后端？ | 业务调用 `toReplyPayload(result)` 或自行组包 |
-| 提示文案怎么写？ | 题干用块属性 `label?`；旁注用 `hint?`；长叙述用普通 Markdown。不设独立 `:::hint` 块 |
+| 提示文案怎么写？ | 题干 / 旁注写在块正文里，解析为 `label` / `hint`；属性只放机器字段。不设独立 `:::hint` 块 |
 | 支持哪些控件？ | `choice` / `input` / `switch` / `action`；其它类型暂不支持 |
 | 库管不管发送？ | **不管**，只负责解析、渲染、产出结构化结果 |
 

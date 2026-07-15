@@ -42,7 +42,8 @@ describe("parseSafe", () => {
       "default",
       ":::",
       "",
-      ":::switch{id=notify label=Notify}",
+      ":::switch{id=notify}",
+      "Notify",
       "",
     ].join("\n");
     const result = parseSafe(source);
@@ -50,7 +51,7 @@ describe("parseSafe", () => {
       {
         type: "input",
         id: "name",
-        defaultValue: "default",
+        label: "default",
       },
       { type: "markdown", text: "\n\n" },
     ]);
@@ -158,7 +159,7 @@ describe("parseSafe", () => {
   });
 
   it("pending action does not parse JSON body until closed", () => {
-    const open = ':::action{id=go label="Go"}\n{"a":1';
+    const open = ":::action{id=go}\nGo\n\n{\"a\":1";
     const { document, pending } = parseSafe(open);
     expect(document.blocks).toEqual([]);
     expect(pending).toMatchObject({
@@ -170,8 +171,48 @@ describe("parseSafe", () => {
     expect(pending).not.toHaveProperty("dataError");
   });
 
+  it("pending action hides an unclosed fenced JSON body", () => {
+    const open = [
+      ":::action{id=create-sub-session}",
+      "创建子会话「审批细节」",
+      "",
+      "```json",
+      '{"sessionName":"审批细节"',
+    ].join("\n");
+    const { pending } = parseSafe(open);
+    expect(pending).toMatchObject({
+      type: "action",
+      id: "create-sub-session",
+      label: "创建子会话「审批细节」",
+    });
+    expect(pending).not.toHaveProperty("hint");
+    expect(pending).not.toHaveProperty("data");
+    expect(pending).not.toHaveProperty("dataError");
+  });
+
+  it.each(["`", "``", "```", "```j", "```json"])(
+    "pending action hides a partial fenced JSON opener %j",
+    (fencePrefix) => {
+      const open = [
+        ":::action{id=create-sub-session}",
+        "创建子会话「审批细节」",
+        "",
+        fencePrefix,
+      ].join("\n");
+      const { pending } = parseSafe(open);
+      expect(pending).toMatchObject({
+        type: "action",
+        id: "create-sub-session",
+        label: "创建子会话「审批细节」",
+      });
+      expect(pending).not.toHaveProperty("hint");
+      expect(pending).not.toHaveProperty("data");
+      expect(pending).not.toHaveProperty("dataError");
+    },
+  );
+
   it("closed action after pending shape has data", () => {
-    const src = ':::action{id=go label="Go"}\n{"a":1}\n:::';
+    const src = ':::action{id=go}\nGo\n\n{"a":1}\n:::';
     const { document, pending } = parseSafe(src);
     expect(pending).toBeNull();
     expect(document.blocks[0]).toMatchObject({

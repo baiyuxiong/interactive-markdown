@@ -11,47 +11,54 @@ function serializeBlock(block: ImdBlock): string {
     case "choice": {
       const attrs = attrsToString({
         id: block.id,
-        label: block.label,
         mode: block.mode,
         required: block.required,
-        hint: block.hint,
       });
-      const body = block.options.map((o) => `- ${o.value} | ${o.label}`).join("\n");
+      const options = block.options.map((o) => `- ${o.value} | ${o.label}`).join("\n");
+      const body = joinBodySections(block.label, options, block.hint);
       return `:::choice${attrs}\n${body}\n:::`;
     }
     case "input": {
       const attrs = attrsToString({
         id: block.id,
-        label: block.label,
         placeholder: block.placeholder,
+        default: block.defaultValue,
         required: block.required,
-        hint: block.hint,
       });
-      const body = block.defaultValue ?? "";
+      const body = joinBodySections(block.label, block.hint);
       return body ? `:::input${attrs}\n${body}\n:::` : `:::input${attrs}\n:::`;
     }
     case "switch": {
       const attrs = attrsToString({
         id: block.id,
-        label: block.label,
         default: block.default,
         required: block.required,
-        hint: block.hint,
       });
-      return `:::switch${attrs}\n:::`;
+      const body = joinBodySections(block.label, block.hint);
+      return body ? `:::switch${attrs}\n${body}\n:::` : `:::switch${attrs}\n:::`;
     }
     case "action": {
       const attrs = attrsToString({
         id: block.id,
-        label: block.label,
-        hint: block.hint,
       });
-      if (block.data !== undefined) {
-        return `:::action${attrs}\n${JSON.stringify(block.data)}\n:::`;
-      }
+      const data =
+        block.data !== undefined
+          ? ["```json", JSON.stringify(block.data), "```"].join("\n")
+          : undefined;
+      const body = joinBodySections(block.label, data, block.hint);
+      if (body) return `:::action${attrs}\n${body}\n:::`;
       return `:::action${attrs}\n:::`;
     }
   }
+}
+
+function joinBodySections(
+  ...sections: Array<string | undefined>
+): string {
+  return sections
+    .map((section) => section?.trim())
+    .filter((section): section is string => Boolean(section))
+    .join("\n\n");
 }
 
 function attrsToString(

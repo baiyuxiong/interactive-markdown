@@ -77,27 +77,38 @@ Optional `renderPending={(pending) => ...}` overrides the pending region.
 
 ### Syntax
 
-```markdown
-:::choice{id=login label="Which login method?" mode=single required hint="hint"}
+````markdown
+:::choice{id=login mode=single required}
+Which login method?
+
 - phone | Phone login
 - oauth | Third-party login
+
+hint
 :::
 
-:::input{id=name label="Product name" placeholder=Example required}
+:::input{id=name placeholder=Example required}
+Product name
 :::
 
-:::switch{id=notify label="Notifications" default=off}
+:::switch{id=notify default=off}
+Notifications
 :::
 
-:::action{id=submit label="Confirm & continue"}
+:::action{id=submit}
+Confirm & continue
+
+```json
 {"step":"next"}
-:::
-
-:::action{id=skip label="Skip for now"}
-:::
 ```
+:::
 
-Default UI order: **label → control → hint**. Quote attribute values that contain spaces. Action click payload context lives on `result.block.data` (or `dataError` if the body failed `JSON.parse`).
+:::action{id=skip}
+Skip for now
+:::
+````
+
+Default UI order: **label → control → hint**. Attributes carry machine fields; visible label/hint text lives in the block body so it can stream progressively. Action click payload context lives on `result.block.data` (or `dataError` if the JSON body is invalid).
 
 ### Development
 
@@ -197,27 +208,38 @@ import { InteractiveMarkdown } from "@interactive-markdown/react";
 
 ### 语法
 
-```markdown
-:::choice{id=login label="你更倾向哪种登录方式？" mode=single required hint="说明"}
+````markdown
+:::choice{id=login mode=single required}
+你更倾向哪种登录方式？
+
 - phone | 手机号登录
 - oauth | 第三方账号登录
+
+说明
 :::
 
-:::input{id=name label="产品名称" placeholder=示例 required}
+:::input{id=name placeholder=示例 required}
+产品名称
 :::
 
-:::switch{id=notify label="消息通知" default=off}
+:::switch{id=notify default=off}
+消息通知
 :::
 
-:::action{id=submit label="确认并继续"}
+:::action{id=submit}
+确认并继续
+
+```json
 {"step":"next"}
-:::
-
-:::action{id=skip label="暂时跳过"}
-:::
 ```
+:::
 
-默认 UI 顺序：**label → 控件 → hint**。属性值含空格时请加引号。点击 action 时，可选 JSON 上下文在 `result.block.data`（正文非法 JSON 时为 `result.block.dataError`）。
+:::action{id=skip}
+暂时跳过
+:::
+````
+
+默认 UI 顺序：**label → 控件 → hint**。属性只放机器字段；可见 label/hint 放块正文，便于流式渐进展示。点击 action 时，可选 JSON 上下文在 `result.block.data`（正文非法 JSON 时为 `result.block.dataError`）。
 
 ### 开发
 

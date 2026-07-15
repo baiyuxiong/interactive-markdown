@@ -527,6 +527,31 @@ button {
   white-space: pre-wrap;
 }
 
+.log-label {
+  grid-column: 1 / -1;
+  margin-top: 0.35rem;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+}
+
+.log-label.error {
+  color: #a33a2d;
+}
+
+.log-payload {
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(31, 107, 84, 0.08);
+  color: var(--text);
+}
+
+.log-payload.error {
+  background: rgba(163, 58, 45, 0.08);
+  color: #7a2c22;
+}
+
 .syntax-list {
   padding: 0.25rem 0 0.75rem;
 }

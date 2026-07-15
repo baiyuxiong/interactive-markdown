@@ -261,13 +261,37 @@ export function App() {
               <p className="empty">{t.eventsEmpty}</p>
             ) : (
               <ul className="log">
-                {log.map((item, i) => (
-                  <li key={`${item.blockId}-${i}`}>
-                    <code>{item.kind}</code>
-                    <span>{item.blockId}</span>
-                    <pre>{JSON.stringify(item.values)}</pre>
-                  </li>
-                ))}
+                {log.map((item, i) => {
+                  const actionBlock =
+                    item.kind === "action" && item.block.type === "action"
+                      ? item.block
+                      : null;
+                  return (
+                    <li key={`${item.blockId}-${i}`}>
+                      <code>{item.kind}</code>
+                      <span>{item.blockId}</span>
+                      <pre>{JSON.stringify(item.values)}</pre>
+                      {actionBlock?.dataError ? (
+                        <>
+                          <span className="log-label error">
+                            {t.eventsDataError}
+                          </span>
+                          <pre className="log-payload error">
+                            {actionBlock.dataError}
+                          </pre>
+                        </>
+                      ) : null}
+                      {actionBlock && actionBlock.data !== undefined ? (
+                        <>
+                          <span className="log-label">{t.eventsData}</span>
+                          <pre className="log-payload">
+                            {JSON.stringify(actionBlock.data, null, 2)}
+                          </pre>
+                        </>
+                      ) : null}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </section>

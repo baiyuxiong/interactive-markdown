@@ -152,34 +152,39 @@ function pushMarkdown(
 
 function toBlock(d: RawDirective): ImdBlock | null {
   switch (d.name) {
-    case "choice":
+    case "choice": {
+      const parsed = parseChoiceBody(d.body, { pending: false });
+      if (parsed.invalid) return null;
       return {
         type: "choice",
         id: str(d.attrs.id) ?? "",
-        label: str(d.attrs.label),
         mode: str(d.attrs.mode) === "multiple" ? "multiple" : "single",
-        options: parseOptions(d.body),
-        ...boolHint(d.attrs),
+        options: parsed.options,
+        ...textFields(parsed),
+        ...boolRequired(d.attrs),
       };
+    }
     case "input": {
-      const defaultValue = d.body.trim();
+      const sections = parseTextSections(d.body);
+      const defaultValue = str(d.attrs.default);
       return {
         type: "input",
         id: str(d.attrs.id) ?? "",
-        label: str(d.attrs.label),
         placeholder: str(d.attrs.placeholder),
+        ...textFields(sections),
         ...(defaultValue ? { defaultValue } : {}),
-        ...boolHint(d.attrs),
+        ...boolRequired(d.attrs),
       };
     }
     case "switch": {
       const def = str(d.attrs.default);
+      const sections = parseTextSections(d.body);
       return {
         type: "switch",
         id: str(d.attrs.id) ?? "",
-        label: str(d.attrs.label),
         default: def === "on" ? "on" : def === "off" ? "off" : undefined,
-        ...boolHint(d.attrs),
+        ...textFields(sections),
+        ...boolRequired(d.attrs),
       };
     }
     case "action": {
@@ -187,8 +192,6 @@ function toBlock(d: RawDirective): ImdBlock | null {
       return {
         type: "action",
         id: str(d.attrs.id) ?? "",
-        label: str(d.attrs.label),
-        hint: str(d.attrs.hint),
         ...parsed,
       };
     }
@@ -208,78 +211,226 @@ function toPending(
   const id = str(attrs.id);
   const base = {
     ...(id !== undefined ? { id } : {}),
-    ...boolHint(attrs),
+    ...boolRequired(attrs),
     raw,
   };
 
   switch (name) {
     case "choice":
+      const choice = parseChoiceBody(body, { pending: true });
       return {
         type: "choice",
-        label: str(attrs.label),
         mode: str(attrs.mode) === "multiple" ? "multiple" : "single",
-        options: parseOptions(body),
+        options: choice.options,
+        ...textFields(choice),
         ...base,
       };
     case "input": {
-      const defaultValue = body.trim();
+      const sections = parseTextSections(body);
+      const defaultValue = str(attrs.default);
       return {
         type: "input",
-        label: str(attrs.label),
         placeholder: str(attrs.placeholder),
+        ...textFields(sections),
         ...(defaultValue ? { defaultValue } : {}),
         ...base,
       };
     }
     case "switch": {
       const def = str(attrs.default);
+      const sections = parseTextSections(body);
       return {
         type: "switch",
-        label: str(attrs.label),
         default: def === "on" ? "on" : def === "off" ? "off" : undefined,
+        ...textFields(sections),
         ...base,
       };
     }
     case "action":
+      const action = parseActionBody(body, { parseData: false });
       return {
         type: "action",
-        label: str(attrs.label),
-        hint: str(attrs.hint),
+        ...textFields(action),
         ...base,
       };
   }
 }
 
-function boolHint(attrs: Attrs): { required?: boolean; hint?: string } {
-  const out: { required?: boolean; hint?: string } = {};
+function boolRequired(attrs: Attrs): { required?: boolean } {
+  const out: { required?: boolean } = {};
   if (attrs.required === true || str(attrs.required) === "true") out.required = true;
-  const hint = str(attrs.hint);
-  if (hint !== undefined) out.hint = hint;
   return out;
 }
 
-function parseOptions(body: string): ImdOption[] {
-  return body
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .flatMap((line) => {
-      const m = /^-\s+(.+?)\s*\|\s*(.+)$/.exec(line);
-      if (!m) return [];
-      return [{ value: m[1]!.trim(), label: m[2]!.trim() }];
-    });
+function parseChoiceBody(
+  body: string,
+  opts: { pending: boolean },
+): { label?: string; hint?: string; options: ImdOption[]; invalid?: boolean } {
+  const labelLines: string[] = [];
+  const hintLines: string[] = [];
+  const options: ImdOption[] = [];
+  let phase: "label" | "options" | "hint" = "label";
+  let invalid = false;
+
+  for (const line of body.split("\n")) {
+    const option = parseOptionLine(line);
+    if (option) {
+      if (phase === "hint") invalid = true;
+      phase = "options";
+      options.push(option);
+      continue;
+    }
+
+    if (opts.pending && phase === "options" && /^\s*-/.test(line)) {
+      continue;
+    }
+
+    if (phase === "label") {
+      labelLines.push(line);
+    } else {
+      phase = "hint";
+      hintLines.push(line);
+    }
+  }
+
+  return {
+    options,
+    ...parseTextSectionsFromLines(labelLines, hintLines),
+    ...(invalid ? { invalid: true } : {}),
+  };
 }
 
-function parseActionBody(body: string): { data?: unknown; dataError?: string } {
+function parseOptionLine(line: string): ImdOption | null {
+  const m = /^-\s+(.+?)\s*\|\s*(.+)$/.exec(line.trim());
+  if (!m) return null;
+  return { value: m[1]!.trim(), label: m[2]!.trim() };
+}
+
+function parseActionBody(
+  body: string,
+  opts: { parseData?: boolean } = { parseData: true },
+): { label?: string; hint?: string; data?: unknown; dataError?: string } {
   const trimmed = body.trim();
+  if (!trimmed) return {};
+
+  const fenced = /```json\s*\n([\s\S]*?)\n```/i.exec(body);
+  if (!opts.parseData) return parsePendingActionText(body, fenced);
+
+  if (fenced?.index !== undefined) {
+    const before = body.slice(0, fenced.index);
+    const after = body.slice(fenced.index + fenced[0].length);
+    return {
+      ...parseTextSectionsFromLines(before.split("\n"), after.split("\n")),
+      ...parseJsonData(fenced[1] ?? ""),
+    };
+  }
+
+  const paragraphs = splitParagraphs(body);
+  const jsonIndex = paragraphs.findIndex((p) => looksLikeJson(p));
+  if (jsonIndex < 0) return parseTextSections(body);
+
+  return {
+    ...parseTextSectionsFromText(
+      paragraphs.slice(0, jsonIndex).join("\n\n"),
+      paragraphs.slice(jsonIndex + 1).join("\n\n"),
+    ),
+    ...parseJsonData(paragraphs[jsonIndex] ?? ""),
+  };
+}
+
+function parsePendingActionText(
+  body: string,
+  fenced: RegExpExecArray | null,
+): { label?: string; hint?: string } {
+  const pendingFenceStart = findPendingJsonFenceStart(body);
+  if (pendingFenceStart >= 0) {
+    return parseTextSections(body.slice(0, pendingFenceStart));
+  }
+
+  if (fenced?.index !== undefined) {
+    const before = body.slice(0, fenced.index);
+    const after = body.slice(fenced.index + fenced[0].length);
+    return parseTextSectionsFromText(before, after);
+  }
+
+  const fenceStart = /```json\b/i.exec(body);
+  if (fenceStart?.index !== undefined) {
+    return parseTextSections(body.slice(0, fenceStart.index));
+  }
+
+  const paragraphs = splitParagraphs(body);
+  const jsonIndex = paragraphs.findIndex((p) => looksLikeJson(p));
+  if (jsonIndex < 0) return parseTextSections(body);
+
+  return parseTextSectionsFromText(
+    paragraphs.slice(0, jsonIndex).join("\n\n"),
+    paragraphs.slice(jsonIndex + 1).join("\n\n"),
+  );
+}
+
+function findPendingJsonFenceStart(body: string): number {
+  let offset = 0;
+  for (const line of body.split("\n")) {
+    if (/^\s*`{1,3}(?:j(?:s(?:o(?:n)?)?)?)?\s*$/i.test(line)) {
+      return offset;
+    }
+    offset += line.length + 1;
+  }
+  return -1;
+}
+
+function parseJsonData(source: string): { data?: unknown; dataError?: string } {
+  const trimmed = source.trim();
   if (!trimmed) return {};
   try {
     return { data: JSON.parse(trimmed) as unknown };
   } catch (err) {
-    return {
-      dataError: err instanceof Error ? err.message : String(err),
-    };
+    return { dataError: err instanceof Error ? err.message : String(err) };
   }
+}
+
+function looksLikeJson(text: string): boolean {
+  return /^(?:[\[{"-]|\d|true\b|false\b|null\b)/.test(text.trim());
+}
+
+function parseTextSections(body: string): { label?: string; hint?: string } {
+  const [label, ...hintParts] = splitParagraphs(body);
+  return parseTextSectionsFromText(label ?? "", hintParts.join("\n\n"));
+}
+
+function parseTextSectionsFromLines(
+  labelLines: string[],
+  hintLines: string[],
+): { label?: string; hint?: string } {
+  return parseTextSectionsFromText(labelLines.join("\n"), hintLines.join("\n"));
+}
+
+function parseTextSectionsFromText(
+  label: string,
+  hint: string,
+): { label?: string; hint?: string } {
+  return {
+    ...(label.trim() ? { label: label.trim() } : {}),
+    ...(hint.trim() ? { hint: hint.trim() } : {}),
+  };
+}
+
+function splitParagraphs(body: string): string[] {
+  return body
+    .trim()
+    .split(/\n\s*\n/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function textFields(fields: { label?: string; hint?: string }): {
+  label?: string;
+  hint?: string;
+} {
+  return {
+    ...(fields.label !== undefined ? { label: fields.label } : {}),
+    ...(fields.hint !== undefined ? { hint: fields.hint } : {}),
+  };
 }
 
 function matchOpenFence(line: string): { name: string; attrText: string } | null {

@@ -6,19 +6,35 @@ import { validate } from "./validate.js";
 const sample = [
   "你好，我们先确认几个偏好。",
   "",
-  ':::choice{id=login label="你更倾向哪种登录方式？" mode=single required hint="后续可在设置中更换"}',
+  ":::choice{id=login mode=single required}",
+  "你更倾向哪种登录方式？",
+  "",
   "- phone | 手机号登录",
   "- oauth | 第三方账号登录",
+  "",
+  "后续可在设置中更换",
   ":::",
   "",
-  ':::input{id=name label="产品暂定叫什么名字？" placeholder=例如：智能审批助手 required hint="可稍后修改"}',
+  ':::input{id=name placeholder=例如：智能审批助手 default="智能审批助手" required}',
+  "产品暂定叫什么名字？",
+  "",
+  "可稍后修改",
   ":::",
   "",
-  ':::switch{id=notify label="是否开启消息通知？" default=off hint="可随时关闭"}',
+  ":::switch{id=notify default=off}",
+  "是否开启消息通知？",
+  "",
+  "可随时关闭",
   ":::",
   "",
-  ':::action{id=submit label="确认并继续" hint="确认后将进入下一步"}',
+  ":::action{id=submit}",
+  "确认并继续",
+  "",
+  "```json",
   '{"next":"review"}',
+  "```",
+  "",
+  "确认后将进入下一步",
   ":::",
 ].join("\n");
 
@@ -46,6 +62,7 @@ describe("parse", () => {
         id: "name",
         label: "产品暂定叫什么名字？",
         placeholder: "例如：智能审批助手",
+        defaultValue: "智能审批助手",
         required: true,
         hint: "可稍后修改",
       },
@@ -69,18 +86,19 @@ describe("parse", () => {
   });
 
   it("parses escaped quotes inside attribute values", () => {
-    const doc = parse(':::input{id=n label="说\\"你好\\""}\n:::');
+    const doc = parse(':::input{id=n placeholder="说\\"你好\\""}\n名字\n:::');
     expect(doc.blocks).toEqual([
-      { type: "input", id: "n", label: '说"你好"' },
+      { type: "input", id: "n", placeholder: '说"你好"', label: "名字" },
     ]);
   });
 
-  it("uses input body as defaultValue", () => {
-    const doc = parse(":::input{id=name}\n智能审批助手\n:::");
+  it("uses input default attribute as defaultValue", () => {
+    const doc = parse(":::input{id=name default=智能审批助手}\n产品名称\n:::");
     expect(doc.blocks).toEqual([
       {
         type: "input",
         id: "name",
+        label: "产品名称",
         defaultValue: "智能审批助手",
       },
     ]);
@@ -92,8 +110,72 @@ describe("parse", () => {
     expect(doc.blocks).toEqual([{ type: "markdown", text: src }]);
   });
 
+  it("ignores legacy label and hint attributes", () => {
+    const doc = parse(
+      ':::switch{id=notify label="legacy label" hint="legacy hint"}\n新的 label\n:::',
+    );
+    expect(doc.blocks).toEqual([
+      { type: "switch", id: "notify", label: "新的 label" },
+    ]);
+  });
+
+  it("parses choice label, options, and hint from body sections", () => {
+    const doc = parse([
+      ":::choice{id=features mode=multiple required}",
+      "需要哪些能力？",
+      "",
+      "- export | 导出报表",
+      "- notify | 消息通知",
+      "",
+      "至少选一项",
+      ":::",
+    ].join("\n"));
+    expect(doc.blocks).toEqual([
+      {
+        type: "choice",
+        id: "features",
+        mode: "multiple",
+        required: true,
+        label: "需要哪些能力？",
+        options: [
+          { value: "export", label: "导出报表" },
+          { value: "notify", label: "消息通知" },
+        ],
+        hint: "至少选一项",
+      },
+    ]);
+  });
+
+  it("rejects choice body text between option rows", () => {
+    const src = [
+      ":::choice{id=x}",
+      "请选择",
+      "- a | A",
+      "中间说明",
+      "- b | B",
+      ":::",
+    ].join("\n");
+    expect(parse(src).blocks).toEqual([{ type: "markdown", text: src }]);
+  });
+
+  it("parses input and switch label and hint from body paragraphs", () => {
+    expect(parse(":::input{id=name}\n产品名称\n\n可稍后修改\n:::").blocks[0]).toEqual({
+      type: "input",
+      id: "name",
+      label: "产品名称",
+      hint: "可稍后修改",
+    });
+    expect(parse(":::switch{id=notify default=off}\n消息通知\n\n可随时关闭\n:::").blocks[0]).toEqual({
+      type: "switch",
+      id: "notify",
+      default: "off",
+      label: "消息通知",
+      hint: "可随时关闭",
+    });
+  });
+
   it("parses optional empty action body without data", () => {
-    const doc = parse(':::action{id=skip label="暂时跳过"}\n:::');
+    const doc = parse(":::action{id=skip}\n暂时跳过\n:::");
     expect(doc.blocks).toEqual([
       { type: "action", id: "skip", label: "暂时跳过" },
     ]);
@@ -153,8 +235,12 @@ describe("parse", () => {
 
   it("round-trips action with data via serialize", () => {
     const src = [
-      ':::action{id=create-sub-session label="创建子会话"}',
+      ":::action{id=create-sub-session}",
+      "创建子会话",
+      "",
+      "```json",
       '{"sessionName":"审批细节"}',
+      "```",
       ":::",
     ].join("\n");
     const doc = parse(src);
@@ -183,7 +269,7 @@ describe("validate", () => {
   });
 
   it("requires action id", () => {
-    const doc = parse(":::action{label=Go}\n:::");
+    const doc = parse(":::action\nGo\n:::");
     expect(validate(doc).ok).toBe(false);
   });
 });
