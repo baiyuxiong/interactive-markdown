@@ -1,6 +1,6 @@
 {
   "name": "@interactive-markdown/core",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Parse and validate Interactive Markdown (IMD)",
   "type": "module",
   "main": "./dist/index.js",
