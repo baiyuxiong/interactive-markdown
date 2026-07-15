@@ -327,21 +327,7 @@ function parseActionBody(
     };
   }
 
-  const paragraphs = splitParagraphs(body);
-  const jsonIndex = paragraphs.findIndex((p) => looksLikeJson(p));
-  if (jsonIndex < 0) return parseActionLabel(body);
-
-  if (paragraphs.slice(jsonIndex + 1).some((part) => part.trim())) {
-    return { invalid: true };
-  }
-
-  const data = parseJsonData(paragraphs[jsonIndex] ?? "");
-  if ("dataError" in data && jsonIndex === 0) return parseActionLabel(body);
-
-  return {
-    ...parseActionLabel(paragraphs.slice(0, jsonIndex).join("\n\n")),
-    ...data,
-  };
+  return parseActionLabel(body);
 }
 
 function parsePendingActionText(
@@ -363,11 +349,7 @@ function parsePendingActionText(
     return parseActionLabel(body.slice(0, fenceStart.index));
   }
 
-  const paragraphs = splitParagraphs(body);
-  const jsonIndex = paragraphs.findIndex((p) => looksLikeJson(p));
-  if (jsonIndex < 0) return parseActionLabel(body);
-
-  return parseActionLabel(paragraphs.slice(0, jsonIndex).join("\n\n"));
+  return parseActionLabel(body);
 }
 
 function findPendingJsonFenceStart(body: string): number {
@@ -406,10 +388,6 @@ function actionFields(fields: {
     ...(fields.data !== undefined ? { data: fields.data } : {}),
     ...(fields.dataError !== undefined ? { dataError: fields.dataError } : {}),
   };
-}
-
-function looksLikeJson(text: string): boolean {
-  return /^(?:[\[{"-]|\d|true\b|false\b|null\b)/.test(text.trim());
 }
 
 function parseTextSections(body: string): { label?: string; hint?: string } {

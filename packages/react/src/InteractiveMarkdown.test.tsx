@@ -148,7 +148,9 @@ describe("InteractiveMarkdown", () => {
       ":::action{id=skip}",
       "Skip",
       "",
+      "```json",
       '{"reason":"later"}',
+      "```",
       ":::",
     ].join("\n");
     render(
@@ -178,7 +180,7 @@ describe("InteractiveMarkdown", () => {
     const onAction = vi.fn();
     render(
       <InteractiveMarkdown
-        source={":::action{id=broken}\nBroken\n\n{bad\n:::"}
+        source={":::action{id=broken}\nBroken\n\n```json\n{bad\n```\n:::"}
         interactive={{ onAction }}
       />,
     );
@@ -396,7 +398,7 @@ describe("InteractiveMarkdown", () => {
     expect(screen.getByRole("button", { name: "Go" })).toBeDisabled();
     rerender(
       <InteractiveMarkdown
-        source={':::action{id=go}\nGo\n\n{"a":1}\n'}
+        source={':::action{id=go}\nGo\n\n```json\n{"a":1}\n'}
         streaming
         incomplete="progressive"
       />,

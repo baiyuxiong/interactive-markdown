@@ -198,15 +198,33 @@ describe("parse", () => {
     });
   });
 
-  it("parses any JSON value into data", () => {
-    expect(parse(':::action{id=a}\n[1,2]\n:::').blocks[0]).toMatchObject({
+  it("keeps all unfenced action body text as label", () => {
+    expect(parse(":::action{id=a}\nGo\n\n404 页面\n:::").blocks[0]).toEqual({
+      type: "action",
+      id: "a",
+      label: "Go\n\n404 页面",
+    });
+    expect(parse(":::action{id=a}\nGo\n\n- 跳过\n:::").blocks[0]).toEqual({
+      type: "action",
+      id: "a",
+      label: "Go\n\n- 跳过",
+    });
+    expect(parse(':::action{id=a}\n{"k":1}\n:::').blocks[0]).toEqual({
+      type: "action",
+      id: "a",
+      label: '{"k":1}',
+    });
+  });
+
+  it("parses fenced JSON values into data", () => {
+    expect(parse(':::action{id=a}\n```json\n[1,2]\n```\n:::').blocks[0]).toMatchObject({
       type: "action",
       data: [1, 2],
     });
-    expect(parse(':::action{id=a}\n"x"\n:::').blocks[0]).toMatchObject({
+    expect(parse(':::action{id=a}\n```json\n"x"\n```\n:::').blocks[0]).toMatchObject({
       data: "x",
     });
-    expect(parse(":::action{id=a}\nnull\n:::").blocks[0]).toMatchObject({
+    expect(parse(":::action{id=a}\n```json\nnull\n```\n:::").blocks[0]).toMatchObject({
       data: null,
     });
   });
@@ -217,26 +235,28 @@ describe("parse", () => {
   });
 
   it("trims action body before JSON.parse", () => {
-    expect(parse(':::action{id=a}\n  {"k":1}  \n:::').blocks[0]).toMatchObject({
+    expect(parse(':::action{id=a}\n```json\n  {"k":1}  \n```\n:::').blocks[0]).toMatchObject({
       type: "action",
       data: { k: 1 },
     });
   });
 
-  it("parses number and boolean JSON into data", () => {
-    expect(parse(":::action{id=a}\n42\n:::").blocks[0]).toMatchObject({
+  it("parses fenced number and boolean JSON into data", () => {
+    expect(parse(":::action{id=a}\n```json\n42\n```\n:::").blocks[0]).toMatchObject({
       data: 42,
     });
-    expect(parse(":::action{id=a}\ntrue\n:::").blocks[0]).toMatchObject({
+    expect(parse(":::action{id=a}\n```json\ntrue\n```\n:::").blocks[0]).toMatchObject({
       data: true,
     });
   });
 
-  it("sets dataError for invalid unfenced JSON-like action body", () => {
+  it("keeps invalid unfenced JSON-like action body as label", () => {
     const doc = parse(":::action{id=broken}\nBroken\n\n{not json\n:::");
-    const block = doc.blocks[0];
-    expect(block).toMatchObject({ type: "action", id: "broken", label: "Broken" });
-    expect(block).toHaveProperty("dataError");
+    expect(doc.blocks[0]).toEqual({
+      type: "action",
+      id: "broken",
+      label: "Broken\n\n{not json",
+    });
     expect(validate(doc).ok).toBe(true);
   });
 

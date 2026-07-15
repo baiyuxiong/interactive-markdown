@@ -110,7 +110,7 @@ Skip for now
 :::
 ````
 
-Default UI order for form controls: **label → control → hint**. Attributes carry machine fields; quote values that contain spaces, quotes, or braces. Visible label/hint text lives in the block body so it can stream progressively. Actions use body label plus optional JSON data, do not support hint, and consecutive actions are grouped for horizontal layout. Action click payload context lives on `result.block.data`; JSON parse errors become `dataError`.
+Default UI order for form controls: **label → control → hint**. Attributes carry machine fields; quote values that contain spaces, quotes, or braces. Visible label/hint text lives in the block body so it can stream progressively. Actions use body label plus an optional fenced `json` data block, do not support hint, and consecutive actions are grouped for horizontal layout. Action click payload context lives on `result.block.data`; fenced `json` parse errors become `dataError`. Unfenced body text is always part of the label.
 
 ### Development
 
@@ -243,7 +243,7 @@ import { InteractiveMarkdown } from "@interactive-markdown/react";
 :::
 ````
 
-表单控件默认 UI 顺序：**label → 控件 → hint**。属性只放机器字段；值含空格、引号或大括号时需加引号。可见 label/hint 放块正文，便于流式渐进展示。action 使用正文 label 加可选 JSON，不支持 hint；连续 action 会自动分组横排展示。点击 action 时，可选 JSON 上下文在 `result.block.data`；JSON 解析失败写入 `result.block.dataError`。
+表单控件默认 UI 顺序：**label → 控件 → hint**。属性只放机器字段；值含空格、引号或大括号时需加引号。可见 label/hint 放块正文，便于流式渐进展示。action 使用正文 label 加可选 fenced `json` 数据块，不支持 hint；连续 action 会自动分组横排展示。点击 action 时，可选 JSON 上下文在 `result.block.data`；fenced `json` 解析失败写入 `result.block.dataError`。未 fenced 的正文始终属于 label。
 
 ### 开发
 

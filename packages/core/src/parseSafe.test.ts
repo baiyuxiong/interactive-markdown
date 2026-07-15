@@ -158,14 +158,14 @@ describe("parseSafe", () => {
     });
   });
 
-  it("pending action does not parse JSON body until closed", () => {
+  it("pending action treats unfenced JSON-looking text as label", () => {
     const open = ":::action{id=go}\nGo\n\n{\"a\":1";
     const { document, pending } = parseSafe(open);
     expect(document.blocks).toEqual([]);
     expect(pending).toMatchObject({
       type: "action",
       id: "go",
-      label: "Go",
+      label: "Go\n\n{\"a\":1",
     });
     expect(pending).not.toHaveProperty("data");
     expect(pending).not.toHaveProperty("dataError");
@@ -212,7 +212,7 @@ describe("parseSafe", () => {
   );
 
   it("closed action after pending shape has data", () => {
-    const src = ':::action{id=go}\nGo\n\n{"a":1}\n:::';
+    const src = ':::action{id=go}\nGo\n\n```json\n{"a":1}\n```\n:::';
     const { document, pending } = parseSafe(src);
     expect(pending).toBeNull();
     expect(document.blocks[0]).toMatchObject({
