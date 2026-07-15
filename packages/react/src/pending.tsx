@@ -38,7 +38,6 @@ export function pendingToBlock(pending: ImdPendingBlock): ImdBlock {
         type: "action",
         id: pending.id ?? "",
         ...(pending.label ? { label: pending.label } : {}),
-        ...(pending.hint ? { hint: pending.hint } : {}),
       };
   }
 }

@@ -45,7 +45,7 @@ function serializeBlock(block: ImdBlock): string {
         block.data !== undefined
           ? ["```json", JSON.stringify(block.data), "```"].join("\n")
           : undefined;
-      const body = joinBodySections(block.label, data, block.hint);
+      const body = joinBodySections(block.label, data);
       if (body) return `:::action${attrs}\n${body}\n:::`;
       return `:::action${attrs}\n:::`;
     }

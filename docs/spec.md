@@ -73,8 +73,6 @@ interactive-markdown/          # GitHub 仓库名示例
 ```json
 {"step":"next"}
 ```
-
-确认后将进入下一步
 :::
 
 :::action{id=skip}
@@ -82,11 +80,11 @@ interactive-markdown/          # GitHub 仓库名示例
 :::
 ````
 
-属性只放 `id` / `mode` / `required` / `default` / `placeholder` 等机器字段；展示文案放正文。正文开头解析为 `label`，控件数据之后的正文解析为 `hint`，因此 `label` / `hint` 可随流式文本真实渐进展示。
+属性只放 `id` / `mode` / `required` / `default` / `placeholder` 等机器字段；展示文案放正文。表单控件正文开头解析为 `label`，控件数据之后的正文解析为 `hint`，因此 `label` / `hint` 可随流式文本真实渐进展示。`action` 不支持 `hint`，正文只包含按钮文案与可选 JSON。
 
-**属性引号规则**：值不含空格时可省略引号（如 `placeholder=产品名称`）；含空格 / `"` / `'` / `{}` 时须加引号。引号内同号可用 `\"` / `\'` 转义，也可用相反引号避免转义。
+**属性引号规则**：值不含空格时可省略引号（如 `placeholder=产品名称`）；含空格 / `"` / `'` / `{}` 时须加引号。引号内同号可用 `\"` / `\'` 转义，也可用相反引号避免转义；quoted value 内允许出现 `{` / `}`。
 
-默认 UI 顺序：**label → 表单控件 → hint**。`switch` 为横排例外：同一行 label 与开关**紧邻**（不贴右缘），`hint` 仍在下方。`action` 为单按钮：文案取正文 `label ?? id`，`hint` 在按钮下方。
+默认 UI 顺序：**label → 表单控件 → hint**。`switch` 为横排例外：同一行 label 与开关**紧邻**（不贴右缘），`hint` 仍在下方。`action` 为单按钮：文案取正文 `label ?? id`；连续 `action`（中间仅空行）默认归为 `action-group` 横排展示。
 
 ### 3.3 块类型
 
@@ -95,7 +93,7 @@ interactive-markdown/          # GitHub 仓库名示例
 | `choice` | `id`, `mode=single\|multiple`, `required?` | label 文本、`- value \| label` 行、hint 文本 |
 | `input` | `id`, `placeholder?`, `default?`, `required?` | label 文本、hint 文本 |
 | `switch` | `id`, `default=on\|off`, `required?` | label 文本、hint 文本 |
-| `action` | `id` | label 文本、可选 JSON、hint 文本 |
+| `action` | `id` | label 文本、可选 JSON |
 
 - `switch` 的取值固定为 `"on"` / `"off"`（写入 `values[0]`）；省略 `default` 时为 `off`  
 - `switch` 的 `required` 表示**必须开启**（`values` 须为 `["on"]`），用于同意条款等场景  
@@ -103,7 +101,7 @@ interactive-markdown/          # GitHub 仓库名示例
 - `input`：**内容变化时**直接触发 `onInput`（无提交按钮）；`required` 未满足时不触发  
 - `input` 的默认值来自 `default` 属性；正文只负责 `label` / `hint`  
 - `choice` 正文分段：第一个选项行之前的文本为 `label`，连续 `- value | label` 行为 `options`，选项后的文本为 `hint`；若 option 行中间夹杂非 option 文本后又出现 option，整块无效并回退为 Markdown  
-- `action`：一块一按钮；点击产出 `kind: "action"`，`blockId` / `values[0]` = `id`。正文中第一段 JSON（推荐 fenced `json` 代码块）写入 `block.data`；JSON 非法写入 `block.dataError`（仍可点击）；无 JSON 时仅作为 label/hint 文案  
+- `action`：一块一按钮；点击产出 `kind: "action"`，`blockId` / `values[0]` = `id`。正文为按钮文案 `label` + 可选 JSON（推荐 fenced `json` 代码块）；JSON 写入 `block.data`，解析失败写入 `block.dataError`（仍可点击）。JSON 后若还有正文文本，整块无效并回退为 Markdown；无 JSON 时整段正文作为 `label`  
 - `serialize` 对 `action`：有 `data`（含 `null`）则以 fenced `json` 写入正文；仅有 `dataError` 时写**空正文**（错误不写回 MD）。损坏 JSON 的完整回放依赖 `document.source`  
 - 其它控件类型（日期、上传、评分等）**暂不支持**
 - 流式策略：`parse` + `stripIncomplete` + `parseSafe`；React 通过 `incomplete` 选择 hide / placeholder / progressive
@@ -122,7 +120,7 @@ type ImdBlock =
   | { type: "choice"; id: string; label?: string; mode: "single" | "multiple"; options: { value: string; label: string }[]; required?: boolean; hint?: string }
   | { type: "input"; id: string; label?: string; placeholder?: string; required?: boolean; hint?: string; defaultValue?: string }
   | { type: "switch"; id: string; label?: string; default?: "on" | "off"; required?: boolean; hint?: string }
-  | { type: "action"; id: string; label?: string; hint?: string; data?: unknown; dataError?: string };
+  | { type: "action"; id: string; label?: string; data?: unknown; dataError?: string };
 
 type ImdDocument = {
   source: string;       // 原始 MD
@@ -169,8 +167,9 @@ import { InteractiveMarkdown } from "@interactive-markdown/react";
   source={aiText}
   streaming={isStreaming}
   interactive={{
-    // 全局：该消息是否已答过（由业务传入）
+    // 全局：该消息是否已答过（由业务传入）；也可按块类型分别禁用
     disabled: false,
+    // disabled: { choice: true, input: true, switch: true, action: false },
 
     // 单选 / 多选
     onChoice: (result) => {
@@ -281,7 +280,7 @@ type ImdInteractionResult = {
 }
 ```
 
-业务从 `result.block.data` 读取可选 JSON 上下文；若正文非法 JSON，则存在 `result.block.dataError`（按钮仍可点击）。
+业务从 `result.block.data` 读取可选 JSON 上下文；若 JSON 正文非法，则存在 `result.block.dataError`（按钮仍可点击）。`action` 不支持 `hint`，JSON 后的普通文本会使整块回退为 Markdown。
 
 ### 5.3 第三层：业务侧如何使用（以聊天为例）
 
@@ -365,7 +364,7 @@ function submitChoice(blockId: string, values: string[]) {
 
 ### 5.5 多块同屏时的状态
 
-一条 AI 消息可含多个 `choice` / `input` / `switch`。库行为：
+一条 AI 消息可含多个 `choice` / `input` / `switch` / `action`。库行为：
 
 | 场景 | 行为 |
 |---|---|
@@ -374,6 +373,7 @@ function submitChoice(blockId: string, values: string[]) {
 | 填写 | 内容变化 → 触发 `onInput`（无提交按钮；`required` 未满足时不触发） |
 | 开关 | 切换 → 触发 `onSwitch`（`values` 为 `["on"]` / `["off"]`） |
 | `disabled: true` | 所有块只读，展示历史答案（由业务传入 `answers`） |
+| `disabled: { choice/input/switch/action }` | 按块类型只读；例如发送答案后可禁用 `choice` / `input` / `switch`，但保留 `action` 可点击 |
 
 业务传入已答状态：
 

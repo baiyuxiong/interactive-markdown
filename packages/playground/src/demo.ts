@@ -40,8 +40,6 @@ export const DEMO_SOURCE: Record<Locale, string> = {
 \`\`\`json
 {"sessionName":"审批细节","context":"澄清审批节点与角色","memberIds":["uuid-1","uuid-2"]}
 \`\`\`
-
-点击后业务可从 result.block.data 取上下文
 :::
 
 :::action{id=propose-session-conclusion}
@@ -95,8 +93,6 @@ Create sub-session “Approval details”
 \`\`\`json
 {"sessionName":"Approval details","context":"Clarify approval nodes and roles","memberIds":["uuid-1","uuid-2"]}
 \`\`\`
-
-After click, read context from result.block.data
 :::
 
 :::action{id=propose-session-conclusion}

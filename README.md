@@ -75,6 +75,8 @@ Optional `renderPending={(pending) => ...}` overrides the pending region.
 />
 ```
 
+Use `interactive.disabled` as an object to lock only some block types, for example `{ choice: true, input: true, switch: true, action: false }`.
+
 ### Syntax
 
 ````markdown
@@ -108,7 +110,7 @@ Skip for now
 :::
 ````
 
-Default UI order: **label → control → hint**. Attributes carry machine fields; visible label/hint text lives in the block body so it can stream progressively. Action click payload context lives on `result.block.data` (or `dataError` if the JSON body is invalid).
+Default UI order for form controls: **label → control → hint**. Attributes carry machine fields; quote values that contain spaces, quotes, or braces. Visible label/hint text lives in the block body so it can stream progressively. Actions use body label plus optional JSON data, do not support hint, and consecutive actions are grouped for horizontal layout. Action click payload context lives on `result.block.data`; JSON parse errors become `dataError`.
 
 ### Development
 
@@ -206,6 +208,8 @@ import { InteractiveMarkdown } from "@interactive-markdown/react";
 />
 ```
 
+`interactive.disabled` 也可按块类型传对象，例如 `{ choice: true, input: true, switch: true, action: false }`，用于只锁表单但保留业务按钮可点。
+
 ### 语法
 
 ````markdown
@@ -239,7 +243,7 @@ import { InteractiveMarkdown } from "@interactive-markdown/react";
 :::
 ````
 
-默认 UI 顺序：**label → 控件 → hint**。属性只放机器字段；可见 label/hint 放块正文，便于流式渐进展示。点击 action 时，可选 JSON 上下文在 `result.block.data`（正文非法 JSON 时为 `result.block.dataError`）。
+表单控件默认 UI 顺序：**label → 控件 → hint**。属性只放机器字段；值含空格、引号或大括号时需加引号。可见 label/hint 放块正文，便于流式渐进展示。action 使用正文 label 加可选 JSON，不支持 hint；连续 action 会自动分组横排展示。点击 action 时，可选 JSON 上下文在 `result.block.data`；JSON 解析失败写入 `result.block.dataError`。
 
 ### 开发
 

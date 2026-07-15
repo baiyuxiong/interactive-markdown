@@ -32,7 +32,6 @@ export type ImdBlock =
       type: "action";
       id: string;
       label?: string;
-      hint?: string;
       data?: unknown;
       dataError?: string;
     };

@@ -33,8 +33,6 @@ const sample = [
   "```json",
   '{"next":"review"}',
   "```",
-  "",
-  "确认后将进入下一步",
   ":::",
 ].join("\n");
 
@@ -79,7 +77,6 @@ describe("parse", () => {
         type: "action",
         id: "submit",
         label: "确认并继续",
-        hint: "确认后将进入下一步",
         data: { next: "review" },
       },
     ]);
@@ -89,6 +86,13 @@ describe("parse", () => {
     const doc = parse(':::input{id=n placeholder="说\\"你好\\""}\n名字\n:::');
     expect(doc.blocks).toEqual([
       { type: "input", id: "n", placeholder: '说"你好"', label: "名字" },
+    ]);
+  });
+
+  it("parses braces inside quoted attribute values", () => {
+    const doc = parse(':::input{id=n placeholder="输入 {name} 后继续"}\n名字\n:::');
+    expect(doc.blocks).toEqual([
+      { type: "input", id: "n", placeholder: "输入 {name} 后继续", label: "名字" },
     ]);
   });
 
@@ -181,6 +185,19 @@ describe("parse", () => {
     ]);
   });
 
+  it("keeps action labels that only look like unfenced JSON", () => {
+    expect(parse(":::action{id=not-found}\n404 页面\n:::").blocks[0]).toEqual({
+      type: "action",
+      id: "not-found",
+      label: "404 页面",
+    });
+    expect(parse(":::action{id=skip}\n- 跳过\n:::").blocks[0]).toEqual({
+      type: "action",
+      id: "skip",
+      label: "- 跳过",
+    });
+  });
+
   it("parses any JSON value into data", () => {
     expect(parse(':::action{id=a}\n[1,2]\n:::').blocks[0]).toMatchObject({
       type: "action",
@@ -215,10 +232,41 @@ describe("parse", () => {
     });
   });
 
-  it("sets dataError for invalid JSON but keeps action block", () => {
-    const doc = parse(":::action{id=broken}\n{not json\n:::");
+  it("sets dataError for invalid unfenced JSON-like action body", () => {
+    const doc = parse(":::action{id=broken}\nBroken\n\n{not json\n:::");
     const block = doc.blocks[0];
-    expect(block).toMatchObject({ type: "action", id: "broken" });
+    expect(block).toMatchObject({ type: "action", id: "broken", label: "Broken" });
+    expect(block).toHaveProperty("dataError");
+    expect(validate(doc).ok).toBe(true);
+  });
+
+  it("does not support action hint text after JSON", () => {
+    const src = [
+      ":::action{id=go}",
+      "Go",
+      "",
+      "```json",
+      '{"a":1}',
+      "```",
+      "",
+      "This trailing text would be a hint.",
+      ":::",
+    ].join("\n");
+    expect(parse(src).blocks).toEqual([{ type: "markdown", text: src }]);
+  });
+
+  it("sets dataError for invalid fenced JSON but keeps action block", () => {
+    const doc = parse([
+      ":::action{id=broken}",
+      "Broken",
+      "",
+      "```json",
+      "{not json",
+      "```",
+      ":::",
+    ].join("\n"));
+    const block = doc.blocks[0];
+    expect(block).toMatchObject({ type: "action", id: "broken", label: "Broken" });
     expect(block).toHaveProperty("dataError");
     expect(typeof (block as { dataError?: string }).dataError).toBe("string");
     expect((block as { dataError?: string }).dataError!.length).toBeGreaterThan(0);
@@ -249,7 +297,13 @@ describe("parse", () => {
   });
 
   it("serialize drops dataError (empty body)", () => {
-    const doc = parse(":::action{id=x}\n{bad\n:::");
+    const doc = parse([
+      ":::action{id=x}",
+      "```json",
+      "{bad",
+      "```",
+      ":::",
+    ].join("\n"));
     const out = serialize(doc);
     expect(out).toBe(":::action{id=x}\n:::");
     expect(parse(out).blocks[0]).toEqual({ type: "action", id: "x" });

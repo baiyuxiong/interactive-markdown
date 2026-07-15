@@ -280,12 +280,27 @@ button {
 .preview-body .imd-choice,
 .preview-body .imd-input,
 .preview-body .imd-switch,
-.preview-body .imd-action {
+.preview-body .imd-action,
+.preview-body .imd-action-group {
   margin: 0.85rem 0;
   padding: 0.85rem 0.9rem;
   border: 1px solid rgba(19, 34, 28, 0.1);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.55);
+}
+
+.preview-body .imd-action-group [data-imd-action-group-items] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.preview-body .imd-action-group .imd-action {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .preview-body .imd-option {

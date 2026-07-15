@@ -12,7 +12,7 @@ type ActionBlock = Extract<ImdBlock, { type: "action" }>;
 
 type Labels = Record<string, never>;
 
-/** Demo: custom chrome; same label → control → hint order as defaults. */
+/** Demo: custom chrome; same label -> control -> hint order as defaults. */
 export function createCustomComponents(_labels?: Labels): ImdComponents {
   function Choice({
     block,
@@ -168,7 +168,6 @@ export function createCustomComponents(_labels?: Labels): ImdComponents {
         >
           {block.label ?? block.id}
         </button>
-        {block.hint ? <p className="imd-hint below">{block.hint}</p> : null}
       </div>
     );
   }

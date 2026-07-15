@@ -9,8 +9,14 @@ export type IncompleteMode = "hide" | "placeholder" | "progressive";
 
 export type ImdAnswers = Record<string, { values: string[] }>;
 
+export type InteractiveBlockType = "choice" | "input" | "switch" | "action";
+
+export type InteractiveDisabled =
+  | boolean
+  | Partial<Record<InteractiveBlockType, boolean>>;
+
 export type InteractiveHandlers = {
-  disabled?: boolean;
+  disabled?: InteractiveDisabled;
   submitOnSelect?: boolean;
   onChoice?: (result: ImdInteractionResult) => void;
   onInput?: (result: ImdInteractionResult) => void;

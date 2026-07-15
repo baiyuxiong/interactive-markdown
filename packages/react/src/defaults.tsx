@@ -208,7 +208,6 @@ export function DefaultAction({
       >
         {block.label ?? block.id}
       </button>
-      {block.hint ? <p className="imd-hint">{block.hint}</p> : null}
     </div>
   );
 }

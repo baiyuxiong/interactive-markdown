@@ -203,6 +203,51 @@ describe("InteractiveMarkdown", () => {
     expect(radio).toBeChecked();
   });
 
+  it("can disable form blocks while keeping actions enabled", async () => {
+    const user = userEvent.setup();
+    const onAction = vi.fn();
+    const src = [
+      ":::choice{id=login mode=single}",
+      "- phone | Phone",
+      ":::",
+      "",
+      ":::input{id=name}",
+      "Name",
+      ":::",
+      "",
+      ":::switch{id=notify default=off}",
+      "Notify",
+      ":::",
+      "",
+      ":::action{id=skip}",
+      "Skip",
+      ":::",
+    ].join("\n");
+
+    render(
+      <InteractiveMarkdown
+        source={src}
+        interactive={{
+          disabled: { choice: true, input: true, switch: true, action: false },
+          onAction,
+        }}
+      />,
+    );
+
+    expect(screen.getByRole("radio", { name: "Phone" })).toBeDisabled();
+    expect(screen.getByRole("textbox", { name: "Name" })).toBeDisabled();
+    expect(screen.getByRole("switch", { name: "Notify" })).toBeDisabled();
+    const action = screen.getByRole("button", { name: "Skip" });
+    expect(action).not.toBeDisabled();
+
+    await user.click(action);
+    expect(onAction.mock.calls[0]?.[0]).toMatchObject({
+      kind: "action",
+      blockId: "skip",
+      values: ["skip"],
+    });
+  });
+
   it("allows component overrides", () => {
     render(
       <InteractiveMarkdown
@@ -388,7 +433,7 @@ describe("InteractiveMarkdown", () => {
     expect(screen.queryByText("A")).not.toBeInTheDocument();
   });
 
-  it("default UI order is label, control, then hint", () => {
+  it("default UI order is label, control, then hint for form controls", () => {
     const src = [
       ":::choice{id=c mode=single}",
       "Pick one",
@@ -412,8 +457,6 @@ describe("InteractiveMarkdown", () => {
       "",
       ":::action{id=go}",
       "Go",
-      "",
-      "action hint",
       ":::",
     ].join("\n");
     const { container } = render(<InteractiveMarkdown source={src} />);
@@ -454,9 +497,63 @@ describe("InteractiveMarkdown", () => {
 
     const action = container.querySelector('[data-imd="action"]')!;
     expect(action.querySelector(".imd-label")).toBeNull();
-    assertOrder([
-      action.querySelector("button"),
-      action.querySelector(".imd-hint"),
-    ]);
+    expect(action.querySelector("button")?.textContent).toBe("Go");
+    expect(action.querySelector(".imd-hint")).toBeNull();
+  });
+
+  it("rejects action trailing text after data", () => {
+    const source = [
+      ":::action{id=go}",
+      "Go",
+      "",
+      "```json",
+      '{"a":1}',
+      "```",
+      "",
+      "Action hints are unsupported.",
+      ":::",
+    ].join("\n");
+    const { container } = render(<InteractiveMarkdown source={source} />);
+    expect(screen.queryByRole("button", { name: "Go" })).not.toBeInTheDocument();
+    expect(container.textContent).toContain(":::action{id=go}");
+    expect(container.textContent).toContain("Action hints are unsupported.");
+  });
+
+  it("groups consecutive actions separated only by whitespace markdown", async () => {
+    const user = userEvent.setup();
+    const onAction = vi.fn();
+    const src = [
+      ":::action{id=create}",
+      "Create",
+      ":::",
+      "",
+      ":::action{id=skip}",
+      "Skip",
+      ":::",
+      "",
+      "Paragraph breaks the group.",
+      "",
+      ":::action{id=again}",
+      "Again",
+      ":::",
+    ].join("\n");
+    const { container } = render(
+      <InteractiveMarkdown source={src} interactive={{ onAction }} />,
+    );
+
+    const groups = container.querySelectorAll('[data-imd="action-group"]');
+    expect(groups).toHaveLength(1);
+    expect(groups[0]!.querySelectorAll('[data-imd="action"]')).toHaveLength(2);
+    expect(
+      groups[0]!.querySelector('[data-imd-action-group-items]'),
+    ).toBeTruthy();
+    expect(container.querySelectorAll('[data-imd="action"]')).toHaveLength(3);
+
+    await user.click(screen.getByRole("button", { name: "Skip" }));
+    expect(onAction.mock.calls[0]?.[0]).toMatchObject({
+      kind: "action",
+      blockId: "skip",
+      values: ["skip"],
+    });
   });
 });

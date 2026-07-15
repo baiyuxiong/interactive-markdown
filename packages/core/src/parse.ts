@@ -189,10 +189,11 @@ function toBlock(d: RawDirective): ImdBlock | null {
     }
     case "action": {
       const parsed = parseActionBody(d.body);
+      if (parsed.invalid) return null;
       return {
         type: "action",
         id: str(d.attrs.id) ?? "",
-        ...parsed,
+        ...actionFields(parsed),
       };
     }
     default:
@@ -309,7 +310,7 @@ function parseOptionLine(line: string): ImdOption | null {
 function parseActionBody(
   body: string,
   opts: { parseData?: boolean } = { parseData: true },
-): { label?: string; hint?: string; data?: unknown; dataError?: string } {
+): { label?: string; data?: unknown; dataError?: string; invalid?: boolean } {
   const trimmed = body.trim();
   if (!trimmed) return {};
 
@@ -319,53 +320,54 @@ function parseActionBody(
   if (fenced?.index !== undefined) {
     const before = body.slice(0, fenced.index);
     const after = body.slice(fenced.index + fenced[0].length);
+    if (after.trim()) return { invalid: true };
     return {
-      ...parseTextSectionsFromLines(before.split("\n"), after.split("\n")),
+      ...parseActionLabel(before),
       ...parseJsonData(fenced[1] ?? ""),
     };
   }
 
   const paragraphs = splitParagraphs(body);
   const jsonIndex = paragraphs.findIndex((p) => looksLikeJson(p));
-  if (jsonIndex < 0) return parseTextSections(body);
+  if (jsonIndex < 0) return parseActionLabel(body);
+
+  if (paragraphs.slice(jsonIndex + 1).some((part) => part.trim())) {
+    return { invalid: true };
+  }
+
+  const data = parseJsonData(paragraphs[jsonIndex] ?? "");
+  if ("dataError" in data && jsonIndex === 0) return parseActionLabel(body);
 
   return {
-    ...parseTextSectionsFromText(
-      paragraphs.slice(0, jsonIndex).join("\n\n"),
-      paragraphs.slice(jsonIndex + 1).join("\n\n"),
-    ),
-    ...parseJsonData(paragraphs[jsonIndex] ?? ""),
+    ...parseActionLabel(paragraphs.slice(0, jsonIndex).join("\n\n")),
+    ...data,
   };
 }
 
 function parsePendingActionText(
   body: string,
   fenced: RegExpExecArray | null,
-): { label?: string; hint?: string } {
+): { label?: string } {
   const pendingFenceStart = findPendingJsonFenceStart(body);
   if (pendingFenceStart >= 0) {
-    return parseTextSections(body.slice(0, pendingFenceStart));
+    return parseActionLabel(body.slice(0, pendingFenceStart));
   }
 
   if (fenced?.index !== undefined) {
     const before = body.slice(0, fenced.index);
-    const after = body.slice(fenced.index + fenced[0].length);
-    return parseTextSectionsFromText(before, after);
+    return parseActionLabel(before);
   }
 
   const fenceStart = /```json\b/i.exec(body);
   if (fenceStart?.index !== undefined) {
-    return parseTextSections(body.slice(0, fenceStart.index));
+    return parseActionLabel(body.slice(0, fenceStart.index));
   }
 
   const paragraphs = splitParagraphs(body);
   const jsonIndex = paragraphs.findIndex((p) => looksLikeJson(p));
-  if (jsonIndex < 0) return parseTextSections(body);
+  if (jsonIndex < 0) return parseActionLabel(body);
 
-  return parseTextSectionsFromText(
-    paragraphs.slice(0, jsonIndex).join("\n\n"),
-    paragraphs.slice(jsonIndex + 1).join("\n\n"),
-  );
+  return parseActionLabel(paragraphs.slice(0, jsonIndex).join("\n\n"));
 }
 
 function findPendingJsonFenceStart(body: string): number {
@@ -387,6 +389,23 @@ function parseJsonData(source: string): { data?: unknown; dataError?: string } {
   } catch (err) {
     return { dataError: err instanceof Error ? err.message : String(err) };
   }
+}
+
+function parseActionLabel(body: string): { label?: string } {
+  const label = body.trim();
+  return label ? { label } : {};
+}
+
+function actionFields(fields: {
+  label?: string;
+  data?: unknown;
+  dataError?: string;
+}): { label?: string; data?: unknown; dataError?: string } {
+  return {
+    ...(fields.label !== undefined ? { label: fields.label } : {}),
+    ...(fields.data !== undefined ? { data: fields.data } : {}),
+    ...(fields.dataError !== undefined ? { dataError: fields.dataError } : {}),
+  };
 }
 
 function looksLikeJson(text: string): boolean {
@@ -434,9 +453,50 @@ function textFields(fields: { label?: string; hint?: string }): {
 }
 
 function matchOpenFence(line: string): { name: string; attrText: string } | null {
-  const m = /^:::([a-zA-Z][\w-]*)(?:\{([^}]*)\})?\s*$/.exec(line);
-  if (!m) return null;
-  return { name: m[1]!, attrText: m[2] ?? "" };
+  if (!line.startsWith(":::")) return null;
+
+  let i = 3;
+  const nameStart = i;
+  if (!/[a-zA-Z]/.test(line[i] ?? "")) return null;
+  i++;
+  while (i < line.length && /[\w-]/.test(line[i]!)) i++;
+  const name = line.slice(nameStart, i);
+
+  if (/^\s*$/.test(line.slice(i))) return { name, attrText: "" };
+  if (line[i] !== "{") return null;
+
+  i++;
+  const attrStart = i;
+  let quote: string | null = null;
+  let escaped = false;
+  while (i < line.length) {
+    const ch = line[i]!;
+    if (quote) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch === "\\") {
+        escaped = true;
+      } else if (ch === quote) {
+        quote = null;
+      }
+      i++;
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      i++;
+      continue;
+    }
+    if (ch === "}") break;
+    i++;
+  }
+
+  if (line[i] !== "}" || quote) return null;
+  const attrText = line.slice(attrStart, i);
+  i++;
+  if (!/^\s*$/.test(line.slice(i))) return null;
+  return { name, attrText };
 }
 
 /** Streaming fence hint: bare :/::/::: or :::name… before the open is complete. */
